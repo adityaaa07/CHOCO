@@ -1,3 +1,4 @@
+// Homepage.js
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../Components/Sidebar';
 import Cookies from 'js-cookie';
@@ -7,66 +8,71 @@ import { db, auth } from '../firebase-config';
 import CreateRoom from '../Components/CreateRoom';
 import JoinRoom from '../Components/JoinRoom';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where,  onSnapshot, doc, getDocs, updateDoc, } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, getDocs, updateDoc } from 'firebase/firestore'
 import LeaveRoom from '../Components/LeaveRoom';
-import { IoBookmarksOutline, } from 'react-icons/io5';
-
-
+import { IoBookmarksOutline } from 'react-icons/io5';
 
 const Homepage = () => {
-  const nav = useNavigate()
-  const [currentSong, setCurrentSong,] = useState([])
-  const {  setVideoIds, setIsLeaving, isLeaving, playedBy,pathName } = useStateContext()
-  const [song, setSong] = useState('')
+  const nav = useNavigate();
+  const [currentSong, setCurrentSong] = useState([]);
+  const { setVideoIds, setIsLeaving, isLeaving, playedBy, pathName } = useStateContext();
+  const [song, setSong] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [roomMate, setRoomMate] = useState([])
-  const [admin, setAdmin] = useState('')
+  const [roomMate, setRoomMate] = useState([]);
+  const [admin, setAdmin] = useState('');
+
   const signOut = () => {
     signOut(auth).then(() => {
-      nav('/')
+      nav('/');
     }).catch((error) => {
-      console.log(error)
+      console.log(error);
     });
-  }
+  };
+
   const toggle = () => setDropdownOpen((prevState) => !prevState);
 
   useEffect(() => {
-    const getData = () => {
-      if (sessionStorage.getItem('roomCode')) {
-        const filteredUsersQuery = query(collection(db, 'room'), where('roomCode', '==', sessionStorage.getItem('roomCode')));
-        onSnapshot(filteredUsersQuery, ((data) => {
-          setCurrentSong(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })))
-          setVideoIds(data.docs[0].data().currentSong)
-          setRoomMate(data.docs[0].data().members)
-          setAdmin(data.docs[0].data().roomAdmin)
-        }))
-      }
-    }
-    getData()
-  }, [sessionStorage.getItem('roomCode')])
-  // Check if the browser supports the Notification API
-  if ('Notification' in window) {
-    // Check if permission has not been granted previously
-    if (Notification.permission !== 'granted') {
-      // Ask for permission
-      Notification.requestPermission().then(function (permission) {
-        if (permission === 'granted') {
-        }
+    let unsubscribe;
+    const roomCode = sessionStorage.getItem('roomCode'); // ✅ store in a variable
+
+    if (roomCode) {
+      const filteredUsersQuery = query(collection(db, 'room'), where('roomCode', '==', roomCode));
+      unsubscribe = onSnapshot(filteredUsersQuery, (data) => {
+        setCurrentSong(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+        setVideoIds(data.docs[0]?.data().currentSong); // ✅ added optional chaining
+        setRoomMate(data.docs[0]?.data().members || []); // ✅ fallback to []
+        setAdmin(data.docs[0]?.data().roomAdmin || '');
       });
     }
+
+    return () => {
+      if (unsubscribe) unsubscribe(); // ✅ cleanup on unmount
+    };
+  }, [sessionStorage.getItem('roomCode')]); // ⚠️ still reruns on every render, consider using a ref or local state
+
+  // ✅ Ask for notification permission
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission().then(function (permission) {
+      if (permission === 'granted') {
+        // Optional: show a welcome notification
+      }
+    });
   }
+
   const handleLeaveRoom = async () => {
     if (roomMate.length > 0) {
-
-      const index = roomMate.indexOf(Cookies.get('name'))
+      const index = roomMate.indexOf(Cookies.get('name'));
       if (index > -1) {
-        roomMate.splice(index, 1)
+        roomMate.splice(index, 1);
       }
-      await updateDoc(doc(db, 'room', sessionStorage.getItem('roomCode')), { members: roomMate })
-    } setCurrentSong([])
-    sessionStorage.removeItem('roomCode')
-    setIsLeaving(!isLeaving)
-  }
+      await updateDoc(doc(db, 'room', sessionStorage.getItem('roomCode')), { members: roomMate });
+    }
+
+    setCurrentSong([]);
+    sessionStorage.removeItem('roomCode');
+    setIsLeaving(!isLeaving);
+  };
+
   return (
     <>
       <Sidebar />
@@ -74,33 +80,44 @@ const Homepage = () => {
         <CreateRoom />
         <JoinRoom />
         <LeaveRoom handleLeaveRoom={handleLeaveRoom} />
-        <div className=' m-3 mb-5  rounded-lg w-96 ' >
+        <div className='m-3 mb-5 rounded-lg w-96'>
           {
-            Cookies.get('name') && !sessionStorage.getItem('roomCode') && pathName.includes('home') &&  ( <div className='text-white  mt-3 text-lg ml-3 flex justify-start  items-center   '>
-            <b className=' '>{'Welcome ' + Cookies.get('name').split(' ')[0]||Cookies.get('name') }</b>
-          </div>)
+            Cookies.get('name') && !sessionStorage.getItem('roomCode') && pathName.includes('home') && (
+              <div className='text-white mt-3 text-lg ml-3 flex justify-start items-center'>
+                <b>{'Welcome ' + (Cookies.get('name').split(' ')[0] || Cookies.get('name'))}</b> {/* ✅ fixed fallback */}
+              </div>
+            )
           }
           {
-            sessionStorage.getItem('roomCode') && currentSong.length > 0 && (<div className=' flex items-center  justify-center flex-col  '>
-              {
-                admin && (<p className='text-sm text-slate-50  mt-2'>Created by {admin.split(' ')[0]|| admin}</p>)
-              }
-              <button className=' mx-auto  text-sm   text-white flex flex-row justify-center items-center gap-2'
-                type='button'
-                onClick={() => setIsLeaving(true)}>
-                <IoBookmarksOutline color='white' size={16} />{sessionStorage.getItem('roomCode')}
-              </button>
-              {
-                playedBy && (<p className='text-sm text-slate-50  mt-2'>Played by {playedBy.split(' ')[0]||playedBy}</p>)
-              }
-              {
-                <YouTubeVideo videoIds={currentSong[0].currentSong} />
-              }
-            </div>)
+            sessionStorage.getItem('roomCode') && currentSong.length > 0 && (
+              <div className='flex items-center justify-center flex-col'>
+                {
+                  admin && (
+                    <p className='text-sm text-slate-50 mt-2'>Created by {admin.split(' ')[0] || admin}</p>
+                  )
+                }
+                <button
+                  className='mx-auto text-sm text-white flex flex-row justify-center items-center gap-2'
+                  type='button'
+                  onClick={() => setIsLeaving(true)}
+                >
+                  <IoBookmarksOutline color='white' size={16} />{sessionStorage.getItem('roomCode')}
+                </button>
+                {
+                  playedBy && (
+                    <p className='text-sm text-slate-50 mt-2'>Played by {playedBy.split(' ')[0] || playedBy}</p>
+                  )
+                }
+                {
+                  <YouTubeVideo videoIds={currentSong[0].currentSong} />
+                }
+              </div>
+            )
           }
         </div>
       </div>
     </>
-  )
-}
-export default Homepage
+  );
+};
+
+export default Homepage;
