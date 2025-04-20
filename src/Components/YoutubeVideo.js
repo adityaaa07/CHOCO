@@ -126,30 +126,18 @@ const YouTubeVideo = ({ videoIds }) => {
   };
 
   return (
-  <div>
-    {id ? (
-      <>
-        {/* Hidden YouTube player */}
-        <div className="w-0 h-0 overflow-hidden">
-          <div id="player" className="w-0 h-0" />
+    <div>
+      {id ? (
+        <div className="w-full h-[200px]">
+          <div id="player-container" className="w-full h-[200px]" />
         </div>
-
-        {/* Visible thumbnail */}
-        <div className="h-60 w-60 mt-3 bg-zinc-800 rounded-lg flex justify-center items-center overflow-hidden">
-          <img
-            src={https://img.youtube.com/vi/${id}/hqdefault.jpg}
-            alt="Video Thumbnail"
-            className="object-cover h-full w-full rounded-lg"
-          />
+      ) : (
+        <div className="h-60 w-60 mt-3 bg-zinc-800 rounded-lg flex justify-center items-center">
+          <HiMusicalNote color="black" size={86} />
         </div>
-      </>
-    ) : (
-      <div className="h-60 w-60 mt-3 bg-zinc-800 rounded-lg flex justify-center items-center">
-        <HiMusicalNote color="black" size={86} />
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 };
 
 export default YouTubeVideo;
