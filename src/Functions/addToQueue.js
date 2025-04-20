@@ -43,6 +43,3 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
 };
 
 export default addToQueue;
-
-
-export default addToQueue;
