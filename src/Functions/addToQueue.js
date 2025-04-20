@@ -1,4 +1,4 @@
-import { db } from "../firebase-config";
+/*import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
 const addToQueue=async(image,title,id,channelName,songs,name)=>{
@@ -10,4 +10,32 @@ const addToQueue=async(image,title,id,channelName,songs,name)=>{
     }
     
 }
-export default addToQueue
+export default addToQueue*/
+
+import { db } from "../firebase-config";
+import { updateDoc, doc } from "firebase/firestore";
+
+const addToQueue = async (image, title, id, channelName, platform, songs, name) => {
+  const track = {
+    image,
+    title,
+    id,
+    channelName,
+    platform, // 'spotify' or 'youtube'
+    playedBy: name,
+  };
+
+  const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
+
+  if (songs) {
+    songs.push(track);
+    await updateDoc(roomRef, { currentSong: [...songs] }).catch((err) => console.log(err));
+  } else {
+    await updateDoc(roomRef, {
+      currentSong: [track],
+      currentPlaying: track,
+    }).catch((err) => console.log(err));
+  }
+};
+
+export default addToQueue;
