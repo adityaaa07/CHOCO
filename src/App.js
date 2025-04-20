@@ -1,4 +1,5 @@
 import React,{useEffect, useState} from 'react';
+import SpotifyCallback from './pages/SpotifyCallback';
 import './App.css';
 import './index.css';
 import Index from './pages';
@@ -11,6 +12,7 @@ import styled from 'styled-components'; // or import { css } from '@emotion/reac
 import { useStateContext } from './Context/ContextProvider';
 import Profile from './pages/Profile';
 import Cookies from 'js-cookie';
+import SpotifyPlayer from './Components/SpotifyPlayer';
 import Privacypolicy from './pages/Privacypolicy';
 import Terms from './pages/Terms';
 import Thirdparty from './pages/Thirdparty';
@@ -19,6 +21,8 @@ const StyledText = styled.div`
 font-family: "Poppins", 'sans-serif'
 `;
 function App() {
+  // Ensure Spotify SDK is always loaded
+  const showSpotifyPlayer = true;
   document.body.style.backgroundColor='#0000'
   const {pathName,setPathName}=useStateContext()
   useEffect(()=>{
@@ -33,6 +37,8 @@ function App() {
   },[window.location.pathname])
  
   return (
+    <>
+      {showSpotifyPlayer && <SpotifyPlayer />}
     <div className='bg-black h-screen'> 
       <StyledText>
       {
@@ -43,6 +49,7 @@ function App() {
       <Routes>
       <Route path='/' element={<Login  />} />
         <Route path='/home' element={<Index />} />
+                <Route path='/spotify-callback' element={<SpotifyCallback />} />
         <Route path='/search' element={<Search  />} />
         <Route path='/chat' element={<Chat  />} />
         <Route path='/profile' element={<Profile />} />
@@ -52,6 +59,7 @@ function App() {
       </Routes>
       </StyledText>
     </div>
+    </>
   );
 }
 
