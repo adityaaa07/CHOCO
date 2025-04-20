@@ -12,7 +12,7 @@ const SpotifyAuth = () => {
       'streaming',
     ];
 
-    const authUrl = 'https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(process.env.REACT_APP_SPOTIFY_REDIRECT_URI)}';
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}`;
 
     window.location.href = authUrl;
   };
