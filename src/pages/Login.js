@@ -4,6 +4,7 @@ import { auth } from '../firebase-config'
 import { GoogleAuthProvider,onAuthStateChanged,signInWithPopup } from 'firebase/auth'
 import Cookies from 'js-cookie'
 import { useNavigate } from 'react-router-dom'
+import SpotifyAuth from '../Components/SpotifyAuth'
 import { useStateContext } from '../Context/ContextProvider'
 const Login = () => {
   const [user,setUser]= useState('')
@@ -19,6 +20,8 @@ const Login = () => {
         Cookies.set('uid',user.uid)
         setPathName('/home')
         nav('/home')
+  // Spotify login button below
+
       }
     })
   },[])
@@ -38,6 +41,8 @@ const Login = () => {
     Cookies.set('photoUrl',user.photoURL)
     Cookies.set('uid',user.uid)
     nav('/home')
+  // Spotify login button below
+
     // console.log()
     // IdP data available using getAdditionalUserInfo(result)
     // ...
@@ -63,7 +68,10 @@ const Login = () => {
             Continue with Google
             <img src='https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg' />
         </button>
-    </div>
+      <div style={{ marginTop: '20px' }}>
+    <SpotifyAuth />
+  </div>
+</div>
   )
 }
 
