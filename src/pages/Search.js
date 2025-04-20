@@ -22,7 +22,7 @@ const Search = () => {
 
     setIsLoading(true);
     const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
-
+    console.log(apiKey);
     const options = {
       method: 'GET',
       url: 'https://www.googleapis.com/youtube/v3/search',
