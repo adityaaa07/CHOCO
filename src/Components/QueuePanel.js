@@ -36,6 +36,7 @@ const QueuePanel = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
+                <span className="text-sm opacity-60">{track.platform === 'spotify' ? '🎵' : '▶️'}</span>
                   <img
                     src={track.image}
                     alt={track.title}
