@@ -22,8 +22,7 @@ const YouTubeVideo = ({ videoIds }) => {
     setPlayedBy,
   } = useStateContext();
 
-  const roomCode = sessionStorage.getItem('roomCode');
-  const docRef = doc(db, 'room', roomCode);
+  const docRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
 
   const onVideoEnd = () => {
     if (videoIds.length > 1) {
@@ -34,16 +33,18 @@ const YouTubeVideo = ({ videoIds }) => {
         currentPlaying: next,
         isPlaying: true,
         currentTime: 0,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       }).catch(console.log);
     }
   };
 
+  // Load Firestore room data
   useEffect(() => {
-    const unsub = onSnapshot(docRef, (docSnap) => {
+    const unsub = onSnapshot(docRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setVideoIds(data.currentSong);
+
         if (data.currentPlaying) {
           setCurrentPlaying(data.currentPlaying);
           setId(data.currentPlaying.id);
@@ -52,22 +53,22 @@ const YouTubeVideo = ({ videoIds }) => {
           setPlayedBy(data.currentPlaying.playedBy);
         }
 
-        // Sync play/pause and time
+        // 🔄 Sync player playback state
         const { isPlaying, currentTime, lastUpdated } = data;
-        if (playerRef.current && playerReady) {
-          const player = playerRef.current;
+        const player = playerRef.current;
+        if (player && playerReady) {
           const now = Date.now();
           const expectedTime = currentTime + (isPlaying ? (now - lastUpdated) / 1000 : 0);
+          const playerTime = await player.getCurrentTime();
 
-          player.getCurrentTime().then(time => {
-            if (Math.abs(time - expectedTime) > 1.5) {
-              player.seekTo(expectedTime, true);
-            }
-          });
+          if (Math.abs(playerTime - expectedTime) > 1.5) {
+            player.seekTo(expectedTime, true);
+          }
 
-          if (isPlaying) {
+          const playerState = player.getPlayerState();
+          if (isPlaying && playerState !== window.YT.PlayerState.PLAYING) {
             player.playVideo();
-          } else {
+          } else if (!isPlaying && playerState === window.YT.PlayerState.PLAYING) {
             player.pauseVideo();
           }
         }
@@ -77,6 +78,7 @@ const YouTubeVideo = ({ videoIds }) => {
     return () => unsub();
   }, [playerReady]);
 
+  // Load YouTube Player
   useEffect(() => {
     if (!id) return;
 
@@ -111,32 +113,31 @@ const YouTubeVideo = ({ videoIds }) => {
         },
         events: {
           onReady: (event) => {
-            const player = event.target;
-            setOnReady(player);
-            setDuration(player.getDuration());
+            setOnReady(event.target);
+            setDuration(event.target.getDuration());
             setPlayerReady(true);
-            startInterval(player);
+            startInterval(event.target);
           },
           onStateChange: async (event) => {
             const player = playerRef.current;
             const state = event.data;
 
             if (state === window.YT.PlayerState.PLAYING) {
-              startInterval(player);
-              const currentTime = await player.getCurrentTime();
+              const time = await player.getCurrentTime();
               updateDoc(docRef, {
                 isPlaying: true,
-                currentTime,
+                currentTime: time,
                 lastUpdated: Date.now(),
               });
+              startInterval(player);
             } else if (state === window.YT.PlayerState.PAUSED) {
-              clearInterval(intervalRef.current);
-              const currentTime = await player.getCurrentTime();
+              const time = await player.getCurrentTime();
               updateDoc(docRef, {
                 isPlaying: false,
-                currentTime,
+                currentTime: time,
                 lastUpdated: Date.now(),
               });
+              clearInterval(intervalRef.current);
             }
 
             if (state === window.YT.PlayerState.ENDED) {
@@ -157,9 +158,12 @@ const YouTubeVideo = ({ videoIds }) => {
 
   const startInterval = (player) => {
     clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(async () => {
-      const newCurrentTime = await player.getCurrentTime();
-      setCurrentTime(prev => (Math.abs(newCurrentTime - prev) > 1 ? newCurrentTime : prev));
+    intervalRef.current = setInterval(() => {
+      const newCurrentTime = player.getCurrentTime();
+      setCurrentTime(prev => {
+        if (Math.abs(newCurrentTime - prev) > 1) return newCurrentTime;
+        return prev;
+      });
     }, 500);
   };
 
@@ -179,6 +183,7 @@ const YouTubeVideo = ({ videoIds }) => {
 };
 
 export default YouTubeVideo;
+
 
 /*import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase-config';
