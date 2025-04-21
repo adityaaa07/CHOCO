@@ -9,11 +9,11 @@ const SpotifyCallback = () => {
 
   useEffect(() => {
     const hash = window.location.hash;
-    const token = new URLSearchParams(hash.replace('#', '?')).get('access_token');
+    const accessToken = new URLSearchParams(hash.replace('#', '?')).get('access_token');
 
-    if (token) {
-      sessionStorage.setItem('spotifyToken', token);  // ✅ store it
-      setToken(token);  // ✅ update context
+    if (accessToken) {
+      sessionStorage.setItem('spotifyToken', accessToken);  // ✅ store it
+      setToken(accessToken);  // ✅ update context
       navigate('/');  // or wherever
     } else {
       console.error("Spotify token not found in callback.");
@@ -24,3 +24,4 @@ const SpotifyCallback = () => {
 };
 
 export default SpotifyCallback;
+
