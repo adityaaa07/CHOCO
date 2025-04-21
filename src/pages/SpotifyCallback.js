@@ -1,23 +1,26 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStateContext } from '../Context/ContextProvider';
+
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useStateContext } from "../Context/ContextProvider";
 
 const SpotifyCallback = () => {
-  const { setToken } = useStateContext();
   const navigate = useNavigate();
+  const { setToken } = useStateContext();
 
   useEffect(() => {
     const hash = window.location.hash;
-    const accessToken = new URLSearchParams(hash.substring(1)).get('access_token');
+    const token = new URLSearchParams(hash.replace('#', '?')).get('access_token');
 
-    if (accessToken) {
-      setToken(accessToken);
-      localStorage.setItem('spotifyAccessToken', accessToken);
-      navigate('/');
+    if (token) {
+      sessionStorage.setItem('spotifyToken', token);  // ✅ store it
+      setToken(token);  // ✅ update context
+      navigate('/');  // or wherever
+    } else {
+      console.error("Spotify token not found in callback.");
     }
   }, [setToken, navigate]);
 
-  return null;
+  return <p>Logging you in via Spotify...</p>;
 };
 
 export default SpotifyCallback;
