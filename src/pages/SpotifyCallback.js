@@ -1,4 +1,4 @@
-
+import axios from 'axios';
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from "../Context/ContextProvider";
@@ -7,20 +7,28 @@ const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken } = useStateContext();
 
-  useEffect(() => {
-    const hash = window.location.hash;
-    const accessToken = new URLSearchParams(hash.replace('#', '?')).get('access_token');
+ useEffect(() => {
+    const fetchToken = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
 
-    if (accessToken) {
-      sessionStorage.setItem('spotifyToken', accessToken);  // ✅ store it
-      setToken(accessToken);  // ✅ update context
-      navigate('/');  // or wherever
-    } else {
-      console.error("Spotify token not found in callback.");
-    }
+      if (!code) return;
+
+      try {
+        const response = await axios.post('https://your-backend.com/api/spotify/token', { code });
+        const Acesstoken = response.data.access_token;
+        setToken(Accesstoken);
+        localStorage.setItem('spotify_access_token', Accesstoken);
+        navigate('/');
+      } catch (error) {
+        console.error('Error getting Spotify token:', error);
+      }
+    };
+
+    fetchToken();
   }, [setToken, navigate]);
 
-  return <p>Logging you in via Spotify...</p>;
+  return <div>Authenticating with Spotify...</div>;
 };
 
 export default SpotifyCallback;
