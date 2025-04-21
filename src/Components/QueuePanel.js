@@ -20,7 +20,7 @@ const QueuePanel = () => {
   return (
     <div className="bg-zinc-900 text-white p-4 rounded-lg h-full overflow-y-auto">
       <h3 className="text-lg font-semibold mb-4">Up Next</h3>
-      {videoIds.length == 0 ? (
+      {!videoIds || videoIds.length === 0 ? (
         <p>No songs in queue.</p>
       ) : (
         <ul className="space-y-2">
