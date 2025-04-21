@@ -16,9 +16,9 @@ const SpotifyCallback = () => {
 
       try {
         const response = await axios.post('https://your-backend.com/api/spotify/token', { code });
-        const Acesstoken = response.data.access_token;
-        setToken(Accesstoken);
-        localStorage.setItem('spotify_access_token', Accesstoken);
+        const accesstoken = response.data.access_token;
+        setToken(accesstoken);
+        localStorage.setItem('spotify_access_token', accesstoken);
         navigate('/');
       } catch (error) {
         console.error('Error getting Spotify token:', error);
