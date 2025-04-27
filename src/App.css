@@ -1,16 +1,27 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
-body{
-  font-family: 'Poppins',sans-serif;
+
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
+
+/* Marquee Container */
 .marquee-container {
   overflow: hidden;
+  width: 100%;
 }
 
+/* Marquee Text */
 .marquee {
   white-space: nowrap;
-  animation: marquee-scroll linear infinite;
+  display: inline-block;
+  animation: marquee-scroll 15s linear infinite;
+  font-size: 1.2rem;
 }
 
+/* Keyframes for Marquee */
 @keyframes marquee-scroll {
   0% {
     transform: translateX(100%);
@@ -22,25 +33,52 @@ body{
 
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
-  width: 2px;
+  width: 4px;
   height: 4px;
-  border:2px solid #0005;
-  /* border-radius: 15px; Width of the scrollbar */
 }
 
-/* Track */
+/* Scrollbar Track */
 ::-webkit-scrollbar-track {
-  background: #0005; /* Color of the scrollbar track */
+  background: #0005;
 }
 
-/* Handle */
+/* Scrollbar Handle */
 ::-webkit-scrollbar-thumb {
-  background: #888; /* Color of the scrollbar handle */
-  border-radius: 4px; /* Rounded corners for the handle */
+  background: #888;
+  border-radius: 4px;
 }
 
-/* Handle on hover */
+/* Scrollbar Handle on Hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: #555; /* Color of the scrollbar handle on hover */
+  background: #555;
 }
 
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .marquee {
+    font-size: 1rem;
+    animation: marquee-scroll 20s linear infinite; /* Slower on smaller screens */
+  }
+
+  /* Make scrollbar smaller or hidden if needed */
+  ::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+
+  body {
+    padding: 0 10px; /* Give slight padding to mobile screen */
+  }
+}
+
+@media (max-width: 480px) {
+  .marquee {
+    font-size: 0.9rem;
+    animation: marquee-scroll 22s linear infinite; /* Even slower on very small screens */
+  }
+
+  /* Optionally, hide scrollbar for very small screens */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
