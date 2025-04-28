@@ -27,19 +27,19 @@ const Sidebar = () => {
         <div className='flex flex-row  text-white ml-5 pt-2'>
         <img  src={logo} height={10} width={20} className='' /> <b className='mt-2 ml-2'>Choco</b>
         </div>
-        <div className='bg-zinc-900 flex flex-col sm:flex-row justify-around p-3 items-center'>
-        
+<         div className='bg-zinc-900 flex flex-row justify-around p-3 items-center'>
+
             <Link to={'/home'}>
               {
                 pathName.includes('home') ?(<GoHomeFill size={25} color='white' />):(<GoHome size={25} color='white' />)
               }
-              
+
             </Link>
             <Link to={'/search'}  >
               {
                 !pathName.includes('search')?(<RxMagnifyingGlass color='white' size={25} />):(<FaMagnifyingGlass color='white' size={20} />)
               }
-            
+
             {/* <GoSearch size={25} color='white' /> */}
             </Link>
             <Link to={'/chat'}>
@@ -53,17 +53,17 @@ const Sidebar = () => {
             <Link to={'/profile'}>
             {
               Cookies.get('photoUrl') ? ( 
-             
+
                   <img src={Cookies.get('photoUrl')} className='rounded-full h-7' />
-                 
+
               ):<GoPerson color='white' size={25} />
             }
             </Link>
             </div>
       </div>
-       
+
     </React.Fragment>
   )
 }
 
-export default Sidebar;
+export default Sidebar
