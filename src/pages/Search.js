@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Sidebar from '../Components/Sidebar';
 import Icon from '@mdi/react';
 import { mdiMagnify } from '@mdi/js';
 import axios from 'axios';
@@ -84,80 +83,72 @@ const Search = () => {
   const shimmerArr = Array.from({ length: 14 });
 
   return (
-    /*<div className="flex h-screen bg-black text-white">*/
     <div className="flex flex-col min-h-screen bg-black text-white">
-      {/* Sidebar / Queue Panel */}
-      <div className="w-[300px] border-r border-zinc-700 overflow-y-auto">
-        <QueuePanel />
+      {/* Search Heading */}
+      <div className="text-2xl font-bold p-6">Search</div>
+
+      {/* Search Form */}
+      <form onSubmit={handleSearch} className="flex gap-3 px-6 mb-4">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="flex-1 border px-3 py-2 rounded-md bg-white text-black placeholder-gray-400 outline-none"
+          placeholder="Find your track..."
+        />
+        <button
+          type="submit"
+          className="bg-white text-gray-700 px-4 py-2 rounded-md"
+        >
+          <Icon path={mdiMagnify} size={1} />
+        </button>
+      </form>
+
+      {/* Songs List */}
+      <div className="flex-1 overflow-y-auto px-6" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+        {!isLoading && data.length > 0 ? (
+          data.map((obj, index) => (
+            <SongCard
+              key={index}
+              image={obj.image}
+              title={obj.title}
+              id={obj.id}
+              uri={obj.uri} // only for Spotify
+              channelName={obj.channelName}
+              isSpotify={obj.platform === 'spotify'}
+              setToastDisplay={setToastDisplay}
+              setToastMsg={setToastMsg}
+            />
+          ))
+        ) : isLoading ? (
+          shimmerArr.map((_, index) => <Shimmer key={index} />)
+        ) : (
+          <div className="flex flex-col justify-center items-center mt-14 text-slate-50">
+            <img
+              src={require('../assests/tape.png')}
+              height={200}
+              width={200}
+              alt="cassette"
+            />
+            <h5 className="mt-7 font-semibold">
+              Find your favorite tracks here
+            </h5>
+            <p className="text-sm text-center text-gray-300 mt-2">
+              Listen to your favorite songs and artists with your loved ones together!
+            </p>
+          </div>
+        )}
+
+        {toastDisplay && (
+          <div className="flex justify-center mt-4">
+            <Toast message={toastMsg} />
+          </div>
+        )}
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col p-6 overflow-hidden">
-        {/* Search Heading */}
-        <div className="text-2xl font-bold mb-4">Search</div>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="flex gap-3 mb-6">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border px-3 py-2 rounded-md bg-white text-black placeholder-gray-400 outline-none"
-            placeholder="Find your track..."
-          />
-          <button
-            type="submit"
-            className="bg-white text-gray-700 px-4 py-2 rounded-md"
-          >
-            <Icon path={mdiMagnify} size={1} />
-          </button>
-        </form>
-
-        {/* Content Area */}
-        <div
-          className="overflow-y-auto pr-2"
-          style={{ height: 'calc(100vh - 150px)' }}
-        >
-          {!isLoading && data.length > 0 ? (
-            data.map((obj, index) => (
-              <SongCard
-                key={index}
-                image={obj.image}
-                title={obj.title}
-                id={obj.id}
-                uri={obj.uri} // only for Spotify
-                channelName={obj.channelName}
-                isSpotify={obj.platform === 'spotify'}
-                setToastDisplay={setToastDisplay}
-                setToastMsg={setToastMsg}
-              />
-            ))
-          ) : isLoading ? (
-            shimmerArr.map((_, index) => <Shimmer key={index} />)
-          ) : (
-            <div className="flex flex-col justify-center items-center mt-14 text-slate-50">
-              <img
-                src={require('../assests/tape.png')}
-                height={200}
-                width={200}
-                alt="cassette"
-              />
-              <h5 className="mt-7 font-semibold">
-                Find your favorite tracks here
-              </h5>
-              <p className="text-sm text-center text-gray-300 mt-2">
-                Listen to your favorite songs and artists with your loved ones
-                together!
-              </p>
-            </div>
-          )}
-
-          {toastDisplay && (
-            <div className="flex justify-center mt-4">
-              <Toast message={toastMsg} />
-            </div>
-          )}
-        </div>
+      {/* Queue Panel at Bottom */}
+      <div className="border-t border-zinc-700 p-4">
+        <QueuePanel />
       </div>
     </div>
   );
