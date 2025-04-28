@@ -3,6 +3,32 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { ContextProvider } from './Context/ContextProvider';
+import { RoomProvider } from './Context/RoomContext'; // ⭐ ADD THIS
+import reportWebVitals from './reportWebVitals';
+import { BrowserRouter } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <ContextProvider>
+        <RoomProvider>   {/* ⭐ WRAP App inside RoomProvider */}
+          <App />
+        </RoomProvider>
+      </ContextProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+);
+
+reportWebVitals();
+
+/*import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { ContextProvider } from './Context/ContextProvider';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -22,3 +48,4 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+*/
