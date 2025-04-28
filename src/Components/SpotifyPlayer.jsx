@@ -1,70 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { getSpotifyAccessToken } from "../spotifyPlayHelper.js";
-
-const SpotifyPlayer = () => {
-  const [player, setPlayer] = useState(null);
-  const [deviceId, setDeviceId] = useState(null);
-
-  useEffect(() => {
-    const loadSpotifyPlayer = async () => {
-      const script = document.createElement("script");
-      script.src = "https://sdk.scdn.co/spotify-player.js";
-      script.async = true;
-      document.body.appendChild(script);
-
-      window.onSpotifyWebPlaybackSDKReady = async () => {
-        const token = await getSpotifyAccessToken();
-
-        const newPlayer = new window.Spotify.Player({
-          name: "My Cool Web Player",
-          getOAuthToken: cb => { cb(token); },
-          volume: 0.5,
-        });
-
-        setPlayer(newPlayer);
-
-        newPlayer.addListener('ready', ({ device_id }) => {
-          console.log('Ready with Device ID', device_id);
-          setDeviceId(device_id);
-        });
-
-        newPlayer.addListener('not_ready', ({ device_id }) => {
-          console.log('Device ID has gone offline', device_id);
-        });
-
-        newPlayer.addListener('initialization_error', ({ message }) => {
-          console.error('Initialization Error:', message);
-        });
-
-        newPlayer.addListener('authentication_error', ({ message }) => {
-          console.error('Authentication Error:', message);
-        });
-
-        newPlayer.addListener('account_error', ({ message }) => {
-          console.error('Account Error:', message);
-        });
-
-        await newPlayer.connect();
-      };
-    };
-
-    loadSpotifyPlayer();
-  }, []);
-
-  return (
-    <div>
-      {deviceId ? (
-        <div className="text-green-500">Spotify Player Ready!</div>
-      ) : (
-        <div className="text-red-500">Connecting to Spotify...</div>
-      )}
-    </div>
-  );
-};
-
-export default SpotifyPlayer;
-
-/*import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 
 const SpotifyPlayer = () => {
@@ -134,4 +68,4 @@ const SpotifyPlayer = () => {
 };
 
 export default SpotifyPlayer;
-*/
+
