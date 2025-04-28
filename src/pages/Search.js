@@ -84,7 +84,8 @@ const Search = () => {
   const shimmerArr = Array.from({ length: 14 });
 
   return (
-    <div className="flex h-screen bg-black text-white">
+    /*<div className="flex h-screen bg-black text-white">*/
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Sidebar / Queue Panel */}
       <div className="w-[300px] border-r border-zinc-700 overflow-y-auto">
         <QueuePanel />
