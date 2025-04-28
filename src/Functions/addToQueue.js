@@ -1,41 +1,4 @@
-import { db } from "../firebase-config";
-import { ref, push } from "firebase/database";
 
-const addToQueue = async (roomCode, songData, platform) => {
-  try {
-    const queueRef = ref(db, `rooms/${roomCode}/queue`);
-
-    let formattedData = {};
-
-    if (platform === "youtube") {
-      formattedData = {
-        id: songData.videoId,
-        title: songData.title,
-        artist: songData.channelTitle || "Unknown Artist",
-        thumbnail: songData.thumbnail,
-        platform: "youtube",
-        uri: `https://www.youtube.com/watch?v=${songData.videoId}`,
-      };
-    } 
-    else if (platform === "spotify") {
-      formattedData = {
-        id: songData.id,
-        title: songData.name,
-        artist: songData.artists.map(artist => artist.name).join(", "),
-        thumbnail: songData.album?.images[0]?.url || "", // Highest quality image
-        platform: "spotify",
-        uri: songData.uri, // Spotify URI
-      };
-    }
-
-    await push(queueRef, formattedData);
-    console.log("Song added to queue:", formattedData);
-
-  } catch (error) {
-    console.error("Error adding song to queue:", error);
-  }
-};
- export default addToQueue;
 /*import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
@@ -49,7 +12,7 @@ const addToQueue=async(image,title,id,channelName,songs,name)=>{
     
 }
 export default addToQueue*/
-/*
+
 import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
@@ -81,4 +44,3 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
 };
 
 export default addToQueue;
-*/
