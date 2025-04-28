@@ -1,82 +1,4 @@
-// src/Context/ContextProvider.jsx
-
-import React, { useContext, createContext, useState, useEffect, useRef } from "react";
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import Cookies from 'js-cookie';
-import { db } from '../firebase-config';
-
-const StateContext = createContext();
-
-export const ContextProvider = ({ children }) => {
-  const [videoId, setVideoId] = useState('');
-  const [modal_backdrop, setmodal_backdrop] = useState(false);
-  const [modal_backdrop1, setmodal_backdrop1] = useState(false);
-  const [joineeSong, setJoineeSong] = useState('');
-  const [pathName, setPathName] = useState('');
-  const [videoIds, setVideoIds] = useState([]);
-  const [notification, setNotification] = useState(0);
-  const [messages, setMessages] = useState([]);
-  const [isLeaving, setIsLeaving] = useState(false);
-  const [onReady, setOnReady] = useState();
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [currentPlaying, setCurrentPlaying] = useState('');
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isSeeking, setIsSeeking] = useState(false);
-  const [playedBy, setPlayedBy] = useState('');
-  const seekBarRef = useRef(null);
-
-  useEffect(() => {
-    const getData = () => {
-      const roomCode = sessionStorage.getItem('roomCode');
-      if (roomCode) {
-        const messagesQuery = query(
-          collection(db, 'room', roomCode, 'messages'),
-          orderBy('timestamp', 'asc')
-        );
-        onSnapshot(messagesQuery, (snapshot) => {
-          const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-          setMessages(docs);
-          const unreadMessages = docs.filter(doc => 
-            doc.status === 'unread' && doc.sender !== Cookies.get('name')
-          );
-          setNotification(unreadMessages.length);
-        });
-      }
-    };
-    getData();
-  }, [sessionStorage.getItem('roomCode')]);
-
-  return (
-    <StateContext.Provider value={{
-      videoId, setVideoId,
-      modal_backdrop, setmodal_backdrop,
-      modal_backdrop1, setmodal_backdrop1,
-      joineeSong, setJoineeSong,
-      pathName, setPathName,
-      videoIds, setVideoIds,
-      notification, setNotification,
-      messages, setMessages,
-      isLeaving, setIsLeaving,
-      onReady, setOnReady,
-      title, setTitle,
-      artist, setArtist,
-      currentPlaying, setCurrentPlaying,
-      duration, setDuration,
-      currentTime, setCurrentTime,
-      isSeeking, setIsSeeking,
-      seekBarRef,
-      playedBy, setPlayedBy,
-    }}>
-      {children}
-    </StateContext.Provider>
-  );
-};
-
-export const useStateContext = () => useContext(StateContext);
-
-/*import React , {useContext,createContext,useState,useEffect,useRef} from "react";
+import React , {useContext,createContext,useState,useEffect,useRef} from "react";
 import {collection,getDoc,query,where,orderBy,onSnapshot,doc,getDocs, addDoc, Timestamp, updateDoc,} from 'firebase/firestore'
 import Cookies from 'js-cookie'
 import { db } from '../firebase-config'
@@ -120,4 +42,4 @@ export const ContextProvider=({children})=>{
     </StateContext.Provider>)
 }
 export const useStateContext = () => useContext(StateContext);
-*/
+
