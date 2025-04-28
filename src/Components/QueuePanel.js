@@ -1,51 +1,4 @@
-import React from "react";
-import { useRoom } from "../Context/RoomContext";
-
-const QueuePanel = () => {
-  const { queue } = useRoom();
-
-  return (
-    <div className="p-4">
-      <h2 className="text-white text-xl font-bold mb-4">Queue</h2>
-      {queue.length === 0 ? (
-        <p className="text-gray-400">No songs in queue</p>
-      ) : (
-        <ul className="space-y-4">
-          {queue.map((track, index) => (
-            <li key={track.id} className="flex items-center bg-gray-800 rounded-lg p-3 shadow-md">
-              {/* Platform Icon */}
-              <div className="mr-4">
-                {track.platform === "spotify" ? (
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg"
-                    alt="Spotify"
-                    className="h-8 w-8"
-                  />
-                ) : (
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg"
-                    alt="YouTube"
-                    className="h-8 w-8"
-                  />
-                )}
-              </div>
-
-              {/* Song Info */}
-              <div className="flex flex-col">
-                <span className="text-white font-semibold">{track.title}</span>
-                <span className="text-gray-400 text-sm">{track.artist}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
-
-export default QueuePanel;
-
-/*import React from 'react';
+import React from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
@@ -109,4 +62,4 @@ const QueuePanel = () => {
 };
 
 export default QueuePanel;
-*/
+
