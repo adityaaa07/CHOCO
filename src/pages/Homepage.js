@@ -80,7 +80,7 @@ const Homepage = () => {
         <CreateRoom />
         <JoinRoom />
         <LeaveRoom handleLeaveRoom={handleLeaveRoom} />
-        <div className='m-3 mb-5 rounded-lg w-96'>
+        <div className='m-3 mb-5 rounded-lg w-full max-w-md'>
           {
             Cookies.get('name') && !sessionStorage.getItem('roomCode') && pathName.includes('home') && (
               <div className='text-white mt-3 text-lg ml-3 flex justify-start items-center'>
