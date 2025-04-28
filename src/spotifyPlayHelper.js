@@ -1,36 +1,4 @@
-import axios from "axios";
 
-export const getSpotifyAccessToken = async () => {
-  const expiry = parseInt(localStorage.getItem("spotifyExpiresIn"));
-  const accessToken = localStorage.getItem("spotifyAccessToken");
-  const refreshToken = localStorage.getItem("spotifyRefreshToken");
-
-  if (Date.now() > expiry) {
-    console.log("Refreshing Spotify access token...");
-    const params = new URLSearchParams();
-    params.append("grant_type", "refresh_token");
-    params.append("refresh_token", refreshToken);
-    params.append("client_id", process.env.REACT_APP_SPOTIFY_CLIENT_ID);
-    params.append("client_secret", process.env.REACT_APP_SPOTIFY_CLIENT_SECRET);
-
-    const response = await axios.post("https://accounts.spotify.com/api/token", params, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
-
-    const { access_token, expires_in } = response.data;
-
-    localStorage.setItem("spotifyAccessToken", access_token);
-    localStorage.setItem("spotifyExpiresIn", Date.now() + expires_in * 1000);
-
-    return access_token;
-  }
-
-  return accessToken;
-};
-
-/*
 export async function playSpotifyTrack(trackUri, token) {
   const deviceId = window.SPOTIFY_DEVICE_ID;
   if (!deviceId) {
@@ -57,4 +25,4 @@ export async function playSpotifyTrack(trackUri, token) {
     console.error('Error playing Spotify track:', err);
   }
 }
-*/
+
