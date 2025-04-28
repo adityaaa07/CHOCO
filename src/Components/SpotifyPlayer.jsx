@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getSpotifyAccessToken } from "./spotifyPlayHelper.js";
+import { getSpotifyAccessToken } from "../spotifyPlayHelper.js";
 
 const SpotifyPlayer = () => {
   const [player, setPlayer] = useState(null);
