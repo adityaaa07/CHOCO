@@ -29,7 +29,7 @@ const Search = () => {
       params: {
         part: 'snippet',
         maxResults: 20,
-        q: input + ' songs',
+        q: `${input} songs`,
         key: apiKey,
         type: 'video',
         videoCategoryId: '10',
@@ -98,7 +98,7 @@ const Search = () => {
         />
         <button
           type="submit"
-          className="bg-white text-gray-700 px-4 py-2 rounded-md"
+          className="bg-white text-gray-700 px-4 py-2 rounded-md flex items-center justify-center"
         >
           <Icon path={mdiMagnify} size={1} />
         </button>
@@ -106,7 +106,9 @@ const Search = () => {
 
       {/* Songs List */}
       <div className="flex-1 overflow-y-auto px-6" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-        {!isLoading && data.length > 0 ? (
+        {isLoading ? (
+          shimmerArr.map((_, index) => <Shimmer key={index} />)
+        ) : data.length > 0 ? (
           data.map((obj, index) => (
             <SongCard
               key={index}
@@ -120,8 +122,6 @@ const Search = () => {
               setToastMsg={setToastMsg}
             />
           ))
-        ) : isLoading ? (
-          shimmerArr.map((_, index) => <Shimmer key={index} />)
         ) : (
           <div className="flex flex-col justify-center items-center mt-14 text-slate-50">
             <img
@@ -139,6 +139,7 @@ const Search = () => {
           </div>
         )}
 
+        {/* Toast */}
         {toastDisplay && (
           <div className="flex justify-center mt-4">
             <Toast message={toastMsg} />
