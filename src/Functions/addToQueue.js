@@ -1,7 +1,7 @@
 import { db } from "../firebase-config";
 import { ref, push } from "firebase/database";
 
-export const addToQueue = async (roomCode, songData, platform) => {
+const addToQueue = async (roomCode, songData, platform) => {
   try {
     const queueRef = ref(db, `rooms/${roomCode}/queue`);
 
@@ -35,7 +35,7 @@ export const addToQueue = async (roomCode, songData, platform) => {
     console.error("Error adding song to queue:", error);
   }
 };
-
+ export default addToQueue;
 /*import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
