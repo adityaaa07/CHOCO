@@ -27,7 +27,7 @@ const Sidebar = () => {
         <div className='flex flex-row  text-white ml-5 pt-2'>
         <img  src={logo} height={10} width={20} className='' /> <b className='mt-2 ml-2'>Choco</b>
         </div>
-<         div className='bg-zinc-900 flex flex-row justify-around p-3 items-center'>
+        <div className='bg-zinc-900 flex flex-col sm:flex-row justify-around p-3 items-center'>
         
             <Link to={'/home'}>
               {
