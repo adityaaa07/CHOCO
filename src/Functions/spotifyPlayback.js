@@ -1,4 +1,4 @@
-import { getSpotifyAccessToken } from "../pages/spotifyPlayHelper";
+import { getSpotifyAccessToken } from "./spotifyPlayHelper";
 
 export const playSpotifyTrack = async (trackUri) => {
   const token = await getSpotifyAccessToken();
