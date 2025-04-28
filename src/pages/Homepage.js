@@ -76,7 +76,7 @@ const Homepage = () => {
   return (
     <>
       <Sidebar />
-      <div className="flex justify-center gap-0  w-screen  bg-black " id='top'>
+      <div className="flex flex-wrap justify-center gap-2 w-screen bg-black" id='top'>
         <CreateRoom />
         <JoinRoom />
         <LeaveRoom handleLeaveRoom={handleLeaveRoom} />
