@@ -5,17 +5,26 @@ export default async function handler(req, res) {
 
   const { code } = req.body;
 
+  if (!code) {
+    return res.status(400).json({ error: 'Missing code parameter' });
+  }
+
+  const clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET;
+  const redirectUri = process.env.REACT_APP_SPOTIFY_REDIRECT_URI;
+
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
   const params = new URLSearchParams();
   params.append('grant_type', 'authorization_code');
   params.append('code', code);
-  params.append('redirect_uri', process.env.REACT_APP_SPOTIFY_REDIRECT_URI);
-  params.append('client_id', process.env.REACT_APP_SPOTIFY_CLIENT_ID);
-  params.append('client_secret', process.env.REACT_APP_SPOTIFY_CLIENT_SECRET);
+  params.append('redirect_uri', redirectUri);
 
   try {
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
+        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
@@ -23,13 +32,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    if (data.error) {
-      return res.status(400).json({ error: data.error_description });
+    if (!response.ok) {
+      console.error('Spotify error:', data);
+      return res.status(response.status).json({ error: data.error_description || data.error });
     }
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch (error) {
-    console.error('Error exchanging token:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Unexpected error:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
