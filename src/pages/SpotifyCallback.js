@@ -18,7 +18,8 @@ const SpotifyCallback = () => {
         const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
         const token = response.data.access_token;
         setToken(token);
-        localStorage.setItem('spotify_access_token', token);
+        sessionStorage.setItem('spotify_token', token);
+        //localStorage.setItem('spotify_access_token', token);
         navigate('/');
       } catch (error) {
         console.error('Error getting Spotify token:', error);
