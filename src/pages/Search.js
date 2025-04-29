@@ -21,7 +21,8 @@ const Search = () => {
 
     setIsLoading(true);
     const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
-    const spotifyToken = sessionStorage.getItem('spotify_token');
+    const spotifyToken = sessionStorage.getItem('spotify_token') || localStorage.getItem('spotify_access_token');
+    //const spotifyToken = sessionStorage.getItem('spotify_token');
 
     const youtubeOptions = {
       method: 'GET',
