@@ -36,7 +36,7 @@ const SongCard = ({
   const handlePlay = async () => {
     if (isSpotify) return;
 
-    const song = { title, id, image, channelName, playedBy: name };
+    const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
     const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
 
     const updatedList = videoIds ? [song, ...videoIds] : [song];
