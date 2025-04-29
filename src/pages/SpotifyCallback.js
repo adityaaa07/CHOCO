@@ -9,22 +9,28 @@ const SpotifyCallback = () => {
 
  useEffect(() => {
     const fetchToken = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  console.log("Received code:", code); // ✅ debug
 
-      if (!code) return;
+  if (!code) {
+    console.warn("No code found in URL");
+    return;
+  }
 
-      try {
-        const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
-        const token = response.data.access_token;
-        setToken(token);
-        sessionStorage.setItem('spotify_token', token);
-        //localStorage.setItem('spotify_access_token', token);
-        navigate('/');
-      } catch (error) {
-        console.error('Error getting Spotify token:', error);
-      }
-    };
+  try {
+    console.log("Sending POST request to exchange code...");
+    const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
+    console.log("Response from token API:", response.data);
+    const token = response.data.access_token;
+    setToken(token);
+    sessionStorage.setItem('spotify_token', token);
+    navigate('/');
+  } catch (error) {
+    console.error('Error getting Spotify token:', error);
+  }
+};
+
 
     fetchToken();
   }, [setToken, navigate]);
