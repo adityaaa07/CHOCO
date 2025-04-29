@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { code } = req.body;
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: params,
+      body: params.toString(),
     });
 
     const data = await response.json();
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('Token exchange failed:', error);
+    console.error('Error exchanging token:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
