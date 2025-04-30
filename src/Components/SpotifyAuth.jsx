@@ -19,7 +19,26 @@ const SpotifyAuth = () => {
     const authUrl = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=${RESPONSE_TYPE}&scope=${SCOPES.join("%20")}`;
     window.location.href = authUrl;
   };
+  
+useEffect(() => {
+  const hash = window.location.hash
+    .substring(1)
+    .split("&")
+    .reduce((initial, item) => {
+      if (item) {
+        const parts = item.split("=");
+        initial[parts[0]] = decodeURIComponent(parts[1]);
+      }
+      return initial;
+    }, {});
 
+  if (hash.access_token) {
+    localStorage.setItem("spotify_access_token", hash.access_token);
+    sessionStorage.setItem("spotify_token", hash.access_token); // optional backup
+    window.location.hash = ""; // Clean up URL
+  }
+}, []);
+  
   return (
     <div className="flex flex-col items-center justify-center">
       <h1 className="text-3xl mb-4">Login to Spotify</h1>
