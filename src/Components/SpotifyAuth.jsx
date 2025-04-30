@@ -20,7 +20,7 @@ const SpotifyAuth = () => {
     window.location.href = authUrl;
   };
   
-useEffect(() => {
+/*useEffect(() => {
   const hash = window.location.hash
     .substring(1)
     .split("&")
@@ -30,7 +30,7 @@ useEffect(() => {
         initial[parts[0]] = decodeURIComponent(parts[1]);
       }
       return initial;
-    }, {});
+    }, {});*/
 
   if (hash.access_token) {
     localStorage.setItem("spotify_access_token", hash.access_token);
