@@ -30,14 +30,14 @@ const SpotifyAuth = () => {
         initial[parts[0]] = decodeURIComponent(parts[1]);
       }
       return initial;
-    }, {});*/
+    }, {});
 
   if (hash.access_token) {
     localStorage.setItem("spotify_access_token", hash.access_token);
     sessionStorage.setItem("spotify_token", hash.access_token); // optional backup
     window.location.hash = ""; // Clean up URL
   }
-}, []);
+}, []);*/
   
   return (
     <div className="flex flex-col items-center justify-center">
