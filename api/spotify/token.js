@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   params.append('redirect_uri', redirectUri);
 
   try {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    const response = await fetch('https://accounts.spotify.com/api/spotify/token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${basicAuth}`,
