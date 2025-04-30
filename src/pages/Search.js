@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiMagnify } from '@mdi/js';
 import axios from 'axios';
@@ -15,6 +15,26 @@ const Search = () => {
   const [toastDisplay, setToastDisplay] = useState(false);
   const [data, setData] = useState([]);
 
+const useEffect(() => { const existingToken = sessionStorage.getItem('spotify_token') || localStorage.getItem('spotify_access_token');
+
+if (!existingToken && window.location.hash) {
+  const hash = window.location.hash
+    .substring(1)
+    .split('&')
+    .reduce((acc, pair) => {
+      const [key, value] = pair.split('=');
+      acc[key] = decodeURIComponent(value);
+      return acc;
+    }, {});
+
+  if (hash.access_token) {
+    sessionStorage.setItem('spotify_token', hash.access_token);
+    localStorage.setItem('spotify_access_token', hash.access_token);
+    window.location.hash = ''; // clean URL
+  }
+}
+}, []);
+  
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
