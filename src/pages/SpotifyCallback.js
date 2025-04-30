@@ -20,7 +20,7 @@ const SpotifyCallback = () => {
 
   try {
     console.log("Sending POST request to exchange code...");
-    const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
+    const response = await axios.post('https://choco-d72bf.cloudfunctions.net/exchangeToken', { code });
     console.log("Response from token API:", response.data);
     const token = response.data.access_token;
     setToken(token);
