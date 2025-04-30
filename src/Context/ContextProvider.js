@@ -22,6 +22,7 @@ export const ContextProvider=({children})=>{
     const [isSeeking, setIsSeeking] = useState(false);
     const [playedBy,setPlayedBy] = useState('')
     const seekBarRef = useRef(null);
+    const [token, setToken] = useState(null); // Make sure you have token and setToken
     useEffect(()=>{
         const getData=()=>{
             if(sessionStorage.getItem('roomCode')){
@@ -37,7 +38,7 @@ export const ContextProvider=({children})=>{
         getData()
         
     },[sessionStorage.getItem('roomCode')])
-    return (<StateContext.Provider value={{videoId,setVideoId,modal_backdrop,setmodal_backdrop,modal_backdrop1,setmodal_backdrop1,joineeSong,setJoineeSong,pathName,setPathName,notification,setNotification,videoIds,setVideoIds,messages,setMessages,isLeaving,setIsLeaving,setOnReady,onReady,title,setTitle,artist,setArtist,currentPlaying,setCurrentPlaying,duration,setDuration,currentTime,setCurrentTime,isSeeking,setIsSeeking,seekBarRef,playedBy,setPlayedBy}}>
+    return (<StateContext.Provider value={{videoId,setVideoId,modal_backdrop,setmodal_backdrop,modal_backdrop1,setmodal_backdrop1,joineeSong,setJoineeSong,pathName,setPathName,notification,setNotification,videoIds,setVideoIds,messages,setMessages,isLeaving,setIsLeaving,setOnReady,onReady,title,setTitle,artist,setArtist,currentPlaying,setCurrentPlaying,duration,setDuration,currentTime,setCurrentTime,isSeeking,setIsSeeking,seekBarRef,playedBy,setPlayedBy,setToken}}>
         {children}
     </StateContext.Provider>)
 }
