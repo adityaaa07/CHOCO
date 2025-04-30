@@ -1,3 +1,5 @@
+let usedCodes = {}; // In-memory store (use a database in production)
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     console.error('Invalid request method:', req.method); // Log invalid method
@@ -9,6 +11,12 @@ export default async function handler(req, res) {
   if (!code) {
     console.error('No authorization code received'); // Log missing code
     return res.status(400).json({ error: 'Missing code parameter' });
+  }
+
+  // Check if the code has already been used
+  if (usedCodes[code]) {
+    console.error('This authorization code has already been used.'); // Log reused code
+    return res.status(400).json({ error: 'Authorization code already used' });
   }
 
   const clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
@@ -47,6 +55,9 @@ export default async function handler(req, res) {
       console.error('Spotify API error:', data); // Log Spotify API error
       return res.status(response.status).json({ error: data.error_description || data.error });
     }
+
+    // Mark the authorization code as used
+    usedCodes[code] = true;
 
     return res.status(200).json(data); // Successfully returned data
 
