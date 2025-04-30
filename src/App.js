@@ -50,7 +50,6 @@ function App() {
       <Route path='/' element={<Login  />} />
         <Route path='/home' element={<Index />} />
         <Route path="/callback" element={<SpotifyCallback />} />
-        //<Route path='/spotify-callback' element={<SpotifyCallback />} />
         <Route path='/search' element={<Search  />} />
         <Route path='/chat' element={<Chat  />} />
         <Route path='/profile' element={<Profile />} />
