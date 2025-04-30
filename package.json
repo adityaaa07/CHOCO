@@ -12,6 +12,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.5",
+    "fetch-node" "^3.3.2",
     "firebase": "^10.14.1",
     "google-icon": "^1.0.1",
     "js-cookie": "^3.0.5",
