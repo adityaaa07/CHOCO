@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     // Dynamically import node-fetch
     const fetch = (await import('node-fetch')).default;
 
-    const response = await fetch('https://accounts.spotify.com/api/spotify/token', {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${basicAuth}`,
