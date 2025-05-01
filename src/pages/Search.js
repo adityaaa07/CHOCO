@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+
+// src/pages/Search.js
+import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiMagnify } from '@mdi/js';
 import axios from 'axios';
@@ -16,35 +17,42 @@ const Search = () => {
   const [toastDisplay, setToastDisplay] = useState(false);
   const [data, setData] = useState([]);
 
-useEffect(() => { const existingToken = sessionStorage.getItem('spotify_token') || localStorage.getItem('spotify_access_token');
+  // On mount, ensure Spotify token is picked up from redirect hash
+  useEffect(() => {
+    const existingToken =
+      sessionStorage.getItem('spotify_token') ||
+      localStorage.getItem('spotify_access_token');
 
-if (!existingToken && window.location.hash) {
-  const hash = window.location.hash
-    .substring(1)
-    .split('&')
-    .reduce((acc, pair) => {
-      const [key, value] = pair.split('=');
-      acc[key] = decodeURIComponent(value);
-      return acc;
-    }, {});
+    if (!existingToken && window.location.hash) {
+      const hash = window.location.hash
+        .substring(1)
+        .split('&')
+        .reduce((acc, pair) => {
+          const [key, value] = pair.split('=');
+          acc[key] = decodeURIComponent(value);
+          return acc;
+        }, {});
 
-  if (hash.access_token) {
-    sessionStorage.setItem('spotify_token', hash.access_token);
-    localStorage.setItem('spotify_access_token', hash.access_token);
-    window.location.hash = ''; // clean URL
-  }
-}
-}, []);
-  
- /* const handleSearch = async (e) => {
+      if (hash.access_token) {
+        sessionStorage.setItem('spotify_token', hash.access_token);
+        localStorage.setItem('spotify_access_token', hash.access_token);
+        window.location.hash = '';
+      }
+    }
+  }, []);
+
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     setIsLoading(true);
     const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
-    const spotifyToken = sessionStorage.getItem('spotify_token') || localStorage.getItem('spotify_access_token');
-    //const spotifyToken = sessionStorage.getItem('spotify_token');
+    const spotifyToken =
+      sessionStorage.getItem('spotify_token') ||
+      localStorage.getItem('spotify_access_token');
+    const loginSource = localStorage.getItem('loginSource');
 
+    // YouTube API options
     const youtubeOptions = {
       method: 'GET',
       url: 'https://www.googleapis.com/youtube/v3/search',
@@ -59,80 +67,22 @@ if (!existingToken && window.location.hash) {
     };
 
     try {
-      const [youtubeRes, spotifyRes] = await Promise.all([
-        axios.request(youtubeOptions),
-        spotifyToken
-          ? axios.get('https://api.spotify.com/v1/search', {
-              headers: {
-                Authorization: `Bearer ${spotifyToken}`,
-              },
-              params: {
-                q: input,
-                type: 'track',
-                limit: 20,
-              },
-            })
-          : Promise.resolve({ data: { tracks: { items: [] } } }),
-      ]);
+      let youtubeRes = { data: { items: [] } };
+      let spotifyRes = { data: { tracks: { items: [] } } };
 
-      const ytTracks = youtubeRes.data.items.map((item) => ({
-        image: item.snippet?.thumbnails?.medium?.url,
-        title: item.snippet?.title,
-        id: item.id?.videoId,
-        channelName: item.snippet?.channelTitle,
-        platform: 'youtube',
-      }));
-
-      const spTracks = spotifyRes.data.tracks.items.map((track) => ({
-        image: track.album.images[0]?.url,
-        title: track.name,
-        id: track.id,
-        uri: track.uri,
-        channelName: track.artists.map((artist) => artist.name).join(', '),
-        platform: 'spotify',
-      }));
-
-      setData([...ytTracks, ...spTracks]);
-    } catch (error) {
-      console.error('Search Error:', error);
-      setToastMsg('Something went wrong while searching.');
-      setToastDisplay(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-*/
-  const handleSearch = async (e) => {
-  e.preventDefault();
-  if (!input.trim()) return;
-
-  setIsLoading(true);
-  const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
-  const spotifyToken =
-    sessionStorage.getItem('spotify_token') ||
-    localStorage.getItem('spotify_access_token');
-
-  const youtubeOptions = {
-    method: 'GET',
-    url: 'https://www.googleapis.com/youtube/v3/search',
-    params: {
-      part: 'snippet',
-      maxResults: 20,
-      q: `${input} songs`,
-      key: apiKey,
-      type: 'video',
-      videoCategoryId: '10',
-    },
-  };
-
-  try {
-    console.log('Starting search with input:', input);
-    console.log('Spotify Token:', spotifyToken);
-
-    const [youtubeRes, spotifyRes] = await Promise.all([
-      axios.request(youtubeOptions),
-      spotifyToken
-        ? axios.get('https://api.spotify.com/v1/search', {
+      // fetch depending on loginSource
+      if (loginSource === 'google') {
+        youtubeRes = await axios.request(youtubeOptions);
+      } else if (loginSource === 'spotify') {
+        if (!spotifyToken) {
+          setToastMsg('You need to log in to Spotify!');
+          setToastDisplay(true);
+          setIsLoading(false);
+          return;
+        }
+        spotifyRes = await axios.get(
+          'https://api.spotify.com/v1/search',
+          {
             headers: {
               Authorization: `Bearer ${spotifyToken}`,
             },
@@ -142,63 +92,53 @@ if (!existingToken && window.location.hash) {
               limit: 20,
               market: 'US',
             },
-          })
-        : Promise.resolve({ data: { tracks: { items: [] } } }),
-    ]);
+          }
+        );
+      }
 
-    console.log('Raw Spotify Response:', spotifyRes.data);
+      // map YouTube
+      const ytTracks = youtubeRes.data.items.map((item) => ({
+        image: item.snippet?.thumbnails?.medium?.url,
+        title: item.snippet?.title,
+        id: item.id?.videoId,
+        channelName: item.snippet?.channelTitle,
+        platform: 'youtube',
+      }));
 
-    const ytTracks = youtubeRes.data.items.map((item) => ({
-      image: item.snippet?.thumbnails?.medium?.url,
-      title: item.snippet?.title,
-      id: item.id?.videoId,
-      channelName: item.snippet?.channelTitle,
-      platform: 'youtube',
-    }));
+      // map Spotify
+      const spTracks =
+        spotifyRes.data.tracks?.items?.map((track) => ({
+          image: track.album?.images?.[0]?.url || '',
+          title: track.name,
+          id: track.id,
+          uri: track.uri,
+          channelName: track.artists
+            .map((artist) => artist.name)
+            .join(', '),
+          platform: 'spotify',
+        })) || [];
 
-    const spTracks = spotifyRes.data.tracks?.items?.map((track) => {
-      const img = track.album?.images?.[0]?.url || '';
-      const name = track.name || 'Unknown Title';
-      const artist = track.artists?.map((a) => a.name).join(', ') || 'Unknown Artist';
-
-      return {
-        image: img,
-        title: name,
-        id: track.id,
-        uri: track.uri,
-        channelName: artist,
-        platform: 'spotify',
-      };
-    }) || [];
-
-    console.log('Parsed Spotify Tracks:', spTracks);
-
-    setData([...ytTracks, ...spTracks]);
-  } catch (error) {
-    console.error('Search Error:', error);
-    if (
-      error.response?.status === 403 &&
-      error.response?.data?.includes('user may not be registered')
-    ) {
-      setToastMsg('Spotify token is valid, but user is not registered in the app settings.');
-    } else {
+      // set only the appropriate data
+      setData(loginSource === 'google' ? ytTracks : spTracks);
+    } catch (error) {
+      console.error('Search Error:', error);
       setToastMsg('Something went wrong while searching.');
+      setToastDisplay(true);
+    } finally {
+      setIsLoading(false);
     }
-    setToastDisplay(true);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const shimmerArr = Array.from({ length: 14 });
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
-      {/* Search Heading */}
       <div className="text-2xl font-bold p-6">Search</div>
 
-      {/* Search Form */}
-      <form onSubmit={handleSearch} className="flex gap-3 px-6 mb-4">
+      <form
+        onSubmit={handleSearch}
+        className="flex gap-3 px-6 mb-4"
+      >
         <input
           type="text"
           value={input}
@@ -214,18 +154,20 @@ if (!existingToken && window.location.hash) {
         </button>
       </form>
 
-      {/* Songs List */}
-      <div className="flex-1 overflow-y-auto px-6" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+      <div
+        className="flex-1 overflow-y-auto px-6"
+        style={{ maxHeight: 'calc(100vh - 300px)' }}
+      >
         {isLoading ? (
-          shimmerArr.map((_, index) => <Shimmer key={index} />)
+          shimmerArr.map((_, i) => <Shimmer key={i} />)
         ) : data.length > 0 ? (
-          data.map((obj, index) => (
+          data.map((obj, i) => (
             <SongCard
-              key={index}
+              key={i}
               image={obj.image}
               title={obj.title}
               id={obj.id}
-              uri={obj.uri} // only for Spotify
+              uri={obj.uri}
               channelName={obj.channelName}
               isSpotify={obj.platform === 'spotify'}
               setToastDisplay={setToastDisplay}
@@ -244,12 +186,12 @@ if (!existingToken && window.location.hash) {
               Find your favorite tracks here
             </h5>
             <p className="text-sm text-center text-gray-300 mt-2">
-              Listen to your favorite songs and artists with your loved ones together!
+              Listen to your favorite songs and artists with your
+              loved ones together!
             </p>
           </div>
         )}
 
-        {/* Toast */}
         {toastDisplay && (
           <div className="flex justify-center mt-4">
             <Toast message={toastMsg} />
@@ -257,7 +199,6 @@ if (!existingToken && window.location.hash) {
         )}
       </div>
 
-      {/* Queue Panel at Bottom */}
       <div className="border-t border-zinc-700 p-4">
         <QueuePanel />
       </div>
