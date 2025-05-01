@@ -36,7 +36,7 @@ if (!existingToken && window.location.hash) {
 }
 }, []);
   
-  const handleSearch = async (e) => {
+ /* const handleSearch = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -101,6 +101,94 @@ if (!existingToken && window.location.hash) {
       setIsLoading(false);
     }
   };
+*/
+  const handleSearch = async (e) => {
+  e.preventDefault();
+  if (!input.trim()) return;
+
+  setIsLoading(true);
+  const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
+  const spotifyToken =
+    sessionStorage.getItem('spotify_token') ||
+    localStorage.getItem('spotify_access_token');
+
+  const youtubeOptions = {
+    method: 'GET',
+    url: 'https://www.googleapis.com/youtube/v3/search',
+    params: {
+      part: 'snippet',
+      maxResults: 20,
+      q: `${input} songs`,
+      key: apiKey,
+      type: 'video',
+      videoCategoryId: '10',
+    },
+  };
+
+  try {
+    console.log('Starting search with input:', input);
+    console.log('Spotify Token:', spotifyToken);
+
+    const [youtubeRes, spotifyRes] = await Promise.all([
+      axios.request(youtubeOptions),
+      spotifyToken
+        ? axios.get('https://api.spotify.com/v1/search', {
+            headers: {
+              Authorization: `Bearer ${spotifyToken}`,
+            },
+            params: {
+              q: input,
+              type: 'track',
+              limit: 20,
+              market: 'US',
+            },
+          })
+        : Promise.resolve({ data: { tracks: { items: [] } } }),
+    ]);
+
+    console.log('Raw Spotify Response:', spotifyRes.data);
+
+    const ytTracks = youtubeRes.data.items.map((item) => ({
+      image: item.snippet?.thumbnails?.medium?.url,
+      title: item.snippet?.title,
+      id: item.id?.videoId,
+      channelName: item.snippet?.channelTitle,
+      platform: 'youtube',
+    }));
+
+    const spTracks = spotifyRes.data.tracks?.items?.map((track) => {
+      const img = track.album?.images?.[0]?.url || '';
+      const name = track.name || 'Unknown Title';
+      const artist = track.artists?.map((a) => a.name).join(', ') || 'Unknown Artist';
+
+      return {
+        image: img,
+        title: name,
+        id: track.id,
+        uri: track.uri,
+        channelName: artist,
+        platform: 'spotify',
+      };
+    }) || [];
+
+    console.log('Parsed Spotify Tracks:', spTracks);
+
+    setData([...ytTracks, ...spTracks]);
+  } catch (error) {
+    console.error('Search Error:', error);
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.includes('user may not be registered')
+    ) {
+      setToastMsg('Spotify token is valid, but user is not registered in the app settings.');
+    } else {
+      setToastMsg('Something went wrong while searching.');
+    }
+    setToastDisplay(true);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const shimmerArr = Array.from({ length: 14 });
 
