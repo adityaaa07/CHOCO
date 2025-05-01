@@ -7,40 +7,73 @@ const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken } = useStateContext();
 
+  // 🔁 Refresh access token if expired
+  const refreshSpotifyToken = async () => {
+    const refreshToken = sessionStorage.getItem('spotify_refresh_token');
+    if (!refreshToken) return;
+
+    try {
+      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/refresh', {
+        refresh_token: refreshToken,
+      });
+
+      const { access_token, expires_in } = response.data;
+      if (access_token) {
+        sessionStorage.setItem('spotify_token', access_token);
+        sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+        setToken(access_token);
+        navigate('/home');
+      }
+    } catch (error) {
+      console.error("Failed to refresh token:", error);
+    }
+  };
+
+  // ✅ Try to skip re-auth if valid token exists
   useEffect(() => {
-  const storedToken = sessionStorage.getItem('spotify_token');
-  
-  if (storedToken) {
-    // Token is already available, so no need to authenticate again
-    navigate('/home');
-  }
-}, [navigate]);
+    const storedToken = sessionStorage.getItem('spotify_token');
+    const expiry = sessionStorage.getItem('spotify_token_expiry');
 
-  
- useEffect(() => {
+    if (storedToken && expiry && Date.now() < parseInt(expiry)) {
+      setToken(storedToken);
+      navigate('/home');
+    } else if (sessionStorage.getItem('spotify_refresh_token')) {
+      refreshSpotifyToken();
+    }
+  }, [navigate, setToken]);
+
+  // 🔁 Handle Spotify redirect with `code`
+  useEffect(() => {
     const fetchToken = async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  console.log("Received code:", code); // ✅ debug
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      console.log("Received code:", code);
 
-  if (!code) {
-    console.warn("No code found in URL");
-    return;
-  }
+      if (!code) {
+        console.warn("No code found in URL");
+        return;
+      }
 
-  try {
-    console.log("Sending POST request to exchange code...");
-    const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
-    console.log("Response from token API:", response.data);
-    const token = response.data.access_token;
-    setToken(token);
-    sessionStorage.setItem('spotify_token', token);
-    navigate('/home');
-  } catch (error) {
-    console.error('Error getting Spotify token:', error);
-  }
-};
+      try {
+        const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
+        console.log("Response from token API:", response.data);
 
+        const { access_token, refresh_token, expires_in } = response.data;
+
+        if (access_token) {
+          sessionStorage.setItem('spotify_token', access_token);
+          sessionStorage.setItem('spotify_refresh_token', refresh_token);
+          sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+
+          setToken(access_token);
+          navigate('/home');
+        } else {
+          console.error("Access token missing in response");
+        }
+      } catch (error) {
+        console.error('Error getting Spotify token:', error);
+      }
+    };
 
     fetchToken();
   }, [setToken, navigate]);
@@ -49,4 +82,3 @@ const SpotifyCallback = () => {
 };
 
 export default SpotifyCallback;
-
