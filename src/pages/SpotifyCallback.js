@@ -25,7 +25,7 @@ const SpotifyCallback = () => {
     const token = response.data.access_token;
     setToken(token);
     sessionStorage.setItem('spotify_token', token);
-    navigate('/');
+    navigate('/home');
   } catch (error) {
     console.error('Error getting Spotify token:', error);
   }
