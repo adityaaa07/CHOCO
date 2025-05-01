@@ -53,8 +53,6 @@ const SpotifyPlayer = ({ token, uri }) => {
       if (player) player.disconnect();
     };
   }, [token, uri]);
-
-  return <div className="text-sm text-green-500">Playing on Spotify...</div>;
 };
 
 export default SpotifyPlayer;
