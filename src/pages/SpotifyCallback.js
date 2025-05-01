@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,8 +20,12 @@ const SpotifyCallback = () => {
 
       const { access_token, expires_in } = response.data;
       if (access_token) {
+        // 🔐 Store updated token
         sessionStorage.setItem('spotify_token', access_token);
         sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+        localStorage.setItem('spotify_access_token', access_token);
+        localStorage.setItem('loginSource', 'spotify');
+
         setToken(access_token);
         navigate('/home');
       }
@@ -35,6 +40,9 @@ const SpotifyCallback = () => {
     const expiry = sessionStorage.getItem('spotify_token_expiry');
 
     if (storedToken && expiry && Date.now() < parseInt(expiry)) {
+      localStorage.setItem('loginSource', 'spotify');
+      localStorage.setItem('spotify_access_token', storedToken);
+
       setToken(storedToken);
       navigate('/home');
     } else if (sessionStorage.getItem('spotify_refresh_token')) {
@@ -61,9 +69,13 @@ const SpotifyCallback = () => {
         const { access_token, refresh_token, expires_in } = response.data;
 
         if (access_token) {
+          // ✅ Store everything
           sessionStorage.setItem('spotify_token', access_token);
           sessionStorage.setItem('spotify_refresh_token', refresh_token);
           sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+
+          localStorage.setItem('spotify_access_token', access_token);
+          localStorage.setItem('loginSource', 'spotify');
 
           setToken(access_token);
           navigate('/home');
@@ -78,7 +90,8 @@ const SpotifyCallback = () => {
     fetchToken();
   }, [setToken, navigate]);
 
-  return <div>Authenticating with Spotify...</div>;
+  return <div className="text-white p-4">Authenticating with Spotify...</div>;
 };
 
 export default SpotifyCallback;
+
