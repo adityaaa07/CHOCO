@@ -34,7 +34,7 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
 
   if (songs) {
     songs.push(track);
-    await updateDoc(roomRef, { currentSong: [...songs] }).catch((err) => console.log(err));
+    await updateDoc(roomRef, { currentSong: updatedQueue }).catch((err) => console.log(err));
   } else {
     await updateDoc(roomRef, {
       currentSong: [track],
