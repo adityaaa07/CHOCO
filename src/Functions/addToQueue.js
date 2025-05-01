@@ -29,12 +29,14 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
   if (platform === 'spotify' && uri) {
     track.uri = uri;
   }
-
+  if(!Array.isArray(songs)){
+      songs=[];
+  }
   const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
 
   if (songs) {
     songs.push(track);
-    await updateDoc(roomRef, { currentSong: updatedQueue }).catch((err) => console.log(err));
+    await updateDoc(roomRef, { currentSong: [...songs] }).catch((err) => console.log(err));
   } else {
     await updateDoc(roomRef, {
       currentSong: [track],
