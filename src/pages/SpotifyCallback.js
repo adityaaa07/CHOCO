@@ -7,6 +7,16 @@ const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken } = useStateContext();
 
+  useEffect(() => {
+  const storedToken = sessionStorage.getItem('spotify_token');
+  
+  if (storedToken) {
+    // Token is already available, so no need to authenticate again
+    navigate('/home');
+  }
+}, [navigate]);
+
+  
  useEffect(() => {
     const fetchToken = async () => {
   const urlParams = new URLSearchParams(window.location.search);
