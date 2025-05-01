@@ -51,8 +51,11 @@ const SongCard = ({
   };
 
   const handleAdd = (type) => {
-    if (type === 'queue') {
-      addToQueue(image, title, id, channelName, videoIds, name);
+    if (type === 'queue' && isSpotify) {
+      addToQueue(image, title, id, channelName,'spotify' ,videoIds, name,uri);
+      setToastMsg('Added to Queue');
+    }else if(type=='queue'){
+      addToQueue(image, title, id, channelName,'youtubr' ,videoIds, name);
       setToastMsg('Added to Queue');
     } else if (type === 'next') {
       playNext(image, title, id, channelName, videoIds, currentPlaying, name);
