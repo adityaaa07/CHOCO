@@ -3,6 +3,52 @@ import { useStateContext } from '../Context/ContextProvider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
 
+// Stop the Spotify player if it's playing
+const stopSpotifyPlayer = () => {
+  const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
+  if (spotifyPlayer) {
+    spotifyPlayer.remove(); // Remove the Spotify player element
+  }
+};
+
+// Stop the YouTube player if it's playing
+const stopYouTubePlayer = () => {
+  const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
+  if (youtubePlayer) {
+    youtubePlayer.remove(); // Remove the YouTube player element
+  }
+};
+
+// Start Spotify playback (this is a placeholder, modify as per your Spotify player setup)
+const startSpotifyPlayer = (uri) => {
+  console.log('Starting Spotify playback for:', uri);
+  // Assuming you have a SpotifyPlayer component to manage playback
+  const playerElement = document.createElement('div');
+  document.body.appendChild(playerElement);
+
+  import('react-dom').then(ReactDOM =>
+    import('./SpotifyPlayer').then(module => {
+      const SpotifyPlayer = module.default;
+      ReactDOM.render(<SpotifyPlayer token={sessionStorage.getItem('spotify_token')} uri={uri} />, playerElement);
+    })
+  );
+};
+
+// Start YouTube playback (this is a placeholder, modify as per your YouTube player setup)
+const startYouTubePlayer = (id) => {
+  console.log('Starting YouTube playback for:', id);
+  // Assuming you have a YouTubeVideo component to manage playback
+  const playerElement = document.createElement('div');
+  document.body.appendChild(playerElement);
+
+  import('react-dom').then(ReactDOM =>
+    import('./YouTubeVideo').then(module => {
+      const YouTubeVideo = module.default;
+      ReactDOM.render(<YouTubeVideo videoIds={[{ id }]} />, playerElement);
+    })
+  );
+};
+
 const QueuePanel = () => {
   const {
     currentPlaying,
@@ -14,20 +60,27 @@ const QueuePanel = () => {
     const roomCode = sessionStorage.getItem('roomCode');
     if (!roomCode) return;
 
-    // Set the currentPlaying in Firebase
+    // Update Firebase with the new current playing track
     await updateDoc(doc(db, 'room', roomCode), {
-      currentPlaying: track,
-      isPlaying: true,  // Ensure playback starts immediately
+      currentPlaying: track,  // Set the current playing track
+      isPlaying: true,  // Ensure playback starts
+      currentTime: 0,  // Reset current time
+      lastUpdated: Date.now(),  // Update timestamp in Firebase
+    }).catch((error) => {
+      console.error('Error updating room data:', error);
     });
 
-    // Handle playback logic based on track platform (Spotify or YouTube)
+    // Stop the other player based on the platform of the track being played
     if (track.platform === 'spotify') {
-      stopYouTubePlayer();
-      startSpotifyPlayer(track.uri);
+      stopYouTubePlayer();  // Stop YouTube if Spotify is selected
+      startSpotifyPlayer(track.uri);  // Start Spotify playback
     } else {
-      stopSpotifyPlayer();
-      startYouTubePlayer(track.id);
+      stopSpotifyPlayer();  // Stop Spotify if YouTube is selected
+      startYouTubePlayer(track.id);  // Start YouTube playback
     }
+
+    // Update the UI to reflect the current track being played
+    setCurrentPlaying(track);
   };
 
   return (
@@ -38,7 +91,7 @@ const QueuePanel = () => {
       ) : (
         <ul className="space-y-2">
           {videoIds.map((track) => {
-            const isCurrent = currentPlaying?.id === track.id;
+            const isCurrent = currentPlaying?.id === track.id;  // Check if this track is the currently playing one
             return (
               <li
                 key={track.id}
