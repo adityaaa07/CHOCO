@@ -29,25 +29,22 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
     track.uri = uri;
   }
 
-  // Check if songs is an array, if not, initialize it as an empty array
-  if (!Array.isArray(songs)) {
-    songs = [];
-  }
+  // Initialize songs as an empty array if undefined or not an array
+  const updatedSongs = Array.isArray(songs) ? [...songs] : [];
+
+  // Add the new track to the queue
+  updatedSongs.push(track);
 
   const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
 
-  // Add the track to the queue (currentSong)
-  songs.push(track);
-
   try {
-    // Update Firebase with the updated currentSong and currentPlaying
+    // Update Firebase with the updated queue
     await updateDoc(roomRef, {
-      currentSong: [...songs],  // Update the queue
-      currentPlaying: track,    // Set the new track as currently playing
+      currentSong: updatedSongs,
     });
-    console.log("Queue updated in Firebase successfully.");
+    console.log(`${platform} track added to queue: ${title}`);
   } catch (err) {
-    console.error("Error updating the queue in Firebase:", err);
+    console.error("Error updating queue in Firebase:", err);
   }
 };
 
