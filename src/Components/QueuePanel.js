@@ -2,6 +2,7 @@ import React from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
+import { useNavigate } from 'react-router-dom';
 
 const stopSpotifyPlayer = () => {
   const spotifyPlayers = document.querySelectorAll('div[id^="spotify-player"]');
@@ -25,8 +26,11 @@ const startSpotifyPlayer = (track, token) => {
   playerElement.id = `spotify-player-${track.id}`;
   const container = document.getElementById('player-container');
   if (container) {
-    container.innerHTML = ''; // Clear existing players
+    container.innerHTML = '';
     container.appendChild(playerElement);
+  } else {
+    console.error('Player container not found');
+    return;
   }
 
   import('react-dom').then(ReactDOM =>
@@ -52,8 +56,11 @@ const startYouTubePlayer = (id) => {
   playerElement.id = `youtube-player-${id}`;
   const container = document.getElementById('player-container');
   if (container) {
-    container.innerHTML = ''; // Clear existing players
+    container.innerHTML = '';
     container.appendChild(playerElement);
+  } else {
+    console.error('Player container not found');
+    return;
   }
 
   import('react-dom').then(ReactDOM =>
@@ -71,10 +78,20 @@ const QueuePanel = () => {
     setCurrentPlaying,
     setVideoIds,
   } = useStateContext();
+  const navigate = useNavigate();
 
   const handlePlayFromQueue = async (track) => {
     const roomCode = sessionStorage.getItem('roomCode');
-    if (!roomCode) return;
+    if (!roomCode) {
+      console.error('No room code found');
+      navigate('/join-room');
+      return;
+    }
+
+    if (!track.id || !track.title || !track.image || !track.channelName || (track.platform === 'spotify' && !track.uri)) {
+      console.error('Invalid track data:', track);
+      return;
+    }
 
     // Stop all players
     stopYouTubePlayer();
@@ -106,6 +123,9 @@ const QueuePanel = () => {
       const token = sessionStorage.getItem('spotify_token');
       if (token && track.uri) {
         startSpotifyPlayer(track, token);
+      } else {
+        console.error('Spotify token or URI missing');
+        navigate('/login');
       }
     } else {
       startYouTubePlayer(track.id);
