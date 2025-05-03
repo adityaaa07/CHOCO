@@ -16,7 +16,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
 
     if (!activeToken || !uri) {
       console.warn('SpotifyPlayer: Missing token or URI:', { activeToken, uri });
-      setError('Cannot play track: Please log in or select a valid track.');
+      //setError('Cannot play track: Please log in or select a valid track.');
       return;
     }
 
