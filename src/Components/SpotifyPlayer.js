@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 import { HiPlay, HiPause } from 'react-icons/hi2';
 import axios from 'axios';
@@ -178,8 +178,8 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
   );
 };
 
-export default SpotifyPlayer;
-/*
+export default SpotifyPlayer; */
+
 import React, { useEffect, useState } from 'react';
 
 const SpotifyPlayer = ({ token, uri }) => {
@@ -300,7 +300,7 @@ const SpotifyPlayer = ({ token, uri }) => {
   return <div id={playerId} style={{ display: 'none' }} />;
 };
 
-export default SpotifyPlayer; */
+export default SpotifyPlayer; 
 /*
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
