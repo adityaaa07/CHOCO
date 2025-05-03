@@ -62,6 +62,7 @@ const SongCard = ({
       return;
     }
 
+    // Validate track properties
     if (!image || !title || !id || !channelName || (isSpotify && !uri)) {
       setToastMsg('Invalid track data.');
       setToastDisplay(true);
@@ -79,9 +80,12 @@ const SongCard = ({
       ...(isSpotify ? { uri } : {}),
     };
 
-    // Stop all players
-    stopYouTubePlayer();
-    stopSpotifyPlayer();
+    // Stop the other platform's player
+    if (isSpotify) {
+      stopYouTubePlayer();
+    } else {
+      stopSpotifyPlayer();
+    }
 
     // Update Firebase
     const roomRef = doc(db, 'room', roomCode);
@@ -99,7 +103,7 @@ const SongCard = ({
         lastUpdated: Date.now(),
       });
 
-      setVideoIds(updatedQueue);
+      setVideoIds(updatedQueueoccollegedays);
       setCurrentPlaying(track);
     } catch (error) {
       console.error('Error updating Firebase:', error);
@@ -113,31 +117,17 @@ const SongCard = ({
       if (!token) {
         setToastMsg('Spotify token missing. Please re-authenticate.');
         setToastDisplay(true);
-        nav('/login');
         return;
       }
 
       const playerElement = document.createElement('div');
       playerElement.id = `spotify-player-${id}`;
-      const container = document.getElementById('player-container');
-      if (container) {
-        container.innerHTML = ''; // Clear existing players
-        container.appendChild(playerElement);
-      }
+      document.body.appendChild(playerElement);
 
       import('react-dom').then(ReactDOM =>
         import('./SpotifyPlayer').then(module => {
           const SpotifyPlayer = module.default;
-          ReactDOM.render(
-            <SpotifyPlayer
-              token={token}
-              uri={uri}
-              image={image}
-              title={title}
-              channelName={channelName}
-            />,
-            playerElement
-          );
+          ReactDOM.render(<SpotifyPlayer token={token} uri={uri} />, playerElement);
         })
       );
     }
