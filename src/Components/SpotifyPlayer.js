@@ -13,8 +13,8 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
   const intervalRef = useRef(null);
   const navigate = useNavigate();
   const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
-  const roomCode = sessionStorage.getItem('roomCode');
-  const roomRef = roomCode ? doc(db, 'room', roomCode) : null;
+  const roomCode = sessionStorage.getItem('roomCode') || 'default'; // Fallback
+  const roomRef = doc(db, 'room', roomCode);
 
   // Fetch track duration from Spotify API
   const fetchTrackInfo = async () => {
@@ -49,8 +49,8 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
   };
 
   useEffect(() => {
-    if (!token || !uri || !roomCode) {
-      console.error('SpotifyPlayer: Missing token, URI, or roomCode', { token, uri, roomCode });
+    if (!token || !uri) {
+      console.error('SpotifyPlayer: Missing token or URI', { token, uri });
       setIsLoading(false);
       return;
     }
@@ -192,19 +192,17 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
       }
       clearInterval(intervalRef.current);
     };
-  }, [token, uri, roomCode, playerId, duration, navigate]);
+  }, [token, uri, playerId, duration, navigate]);
 
   const updateFirebaseState = async (playing, time) => {
-    if (roomRef) {
-      try {
-        await updateDoc(roomRef, {
-          isPlaying: playing,
-          currentTime: time,
-          lastUpdated: Date.now(),
-        });
-      } catch (err) {
-        console.error('Error updating Firebase:', err);
-      }
+    try {
+      await updateDoc(roomRef, {
+        isPlaying: playing,
+        currentTime: time,
+        lastUpdated: Date.now(),
+      });
+    } catch (err) {
+      console.error('Error updating Firebase:', err);
     }
   };
 
@@ -222,7 +220,7 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
 
   const handleSeek = async (e) => {
     const newTime = parseFloat(e.target.value);
-    if (player && roomRef) {
+    if (player) {
       try {
         await fetch('https://api.spotify.com/v1/me/player/seek', {
           method: 'PUT',
@@ -246,7 +244,7 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
     }
   };
 
-  if (!token || !uri || !roomCode) {
+  if (!token || !uri) {
     return null;
   }
 
