@@ -16,12 +16,18 @@ import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
 const addToQueue = async (image, title, id, channelName, platform, songs, name, uri = null) => {
+  // Validate inputs
+  if (!image || !title || !id || !channelName || !name || (platform === 'spotify' && !uri)) {
+    console.error('Invalid track data for queue:', { image, title, id, channelName, name, uri });
+    return;
+  }
+
   const track = {
     image,
     title,
     id,
     channelName,
-    platform, // 'spotify' or 'youtube'
+    platform,
     playedBy: name,
   };
 
@@ -29,16 +35,18 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
     track.uri = uri;
   }
 
-  // Initialize songs as an empty array if undefined or not an array
   const updatedSongs = Array.isArray(songs) ? [...songs] : [];
-
-  // Add the new track to the queue
   updatedSongs.push(track);
 
-  const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
+  const roomCode = sessionStorage.getItem('roomCode');
+  if (!roomCode) {
+    console.error('No room code found');
+    return;
+  }
+
+  const roomRef = doc(db, 'room', roomCode);
 
   try {
-    // Update Firebase with the updated queue
     await updateDoc(roomRef, {
       currentSong: updatedSongs,
     });
