@@ -28,14 +28,14 @@ const SongCard = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const toggle = () => setDropdownOpen(prev => !prev);
-  const { videoIds, currentPlaying, setCurrentPlaying } = useStateContext();
+  const { videoIds, currentPlaying, setCurrentPlaying, setVideoIds } = useStateContext();
   const nav = useNavigate();
   const name = Cookies.get('name');
 
   const stopSpotifyPlayer = () => {
     const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
     if (spotifyPlayer) {
-      spotifyPlayer.remove(); // Remove the player
+      spotifyPlayer.remove();
       console.log("Spotify player stopped and removed.");
     }
   };
@@ -43,75 +43,82 @@ const SongCard = ({
   const stopYouTubePlayer = () => {
     const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
     if (youtubePlayer) {
-      youtubePlayer.remove(); // Remove the player
+      youtubePlayer.remove();
       console.log("YouTube player stopped and removed.");
     }
   };
 
   const handlePlay = async () => {
-    // Stop the other platform's player when switching to a new song
+    const roomCode = sessionStorage.getItem('roomCode');
+    if (!roomCode) {
+      setToastMsg('Please join a room first!');
+      setToastDisplay(true);
+      return;
+    }
+
+    const track = {
+      title,
+      id,
+      image,
+      channelName,
+      platform: isSpotify ? 'spotify' : 'youtube',
+      playedBy: name,
+      ...(isSpotify && uri ? { uri } : {}),
+    };
+
+    // Stop the other platform's player
     if (isSpotify) {
-      // Stop YouTube playback before starting Spotify
-      if (currentPlaying?.platform === 'youtube') {
-        stopYouTubePlayer();
+      stopYouTubePlayer();
+    } else {
+      stopSpotifyPlayer();
+    }
+
+    // Update Firebase with the new current playing track
+    const roomRef = doc(db, 'room', roomCode);
+    try {
+      // Add track to queue if not already present
+      const updatedQueue = Array.isArray(videoIds) ? [...videoIds] : [];
+      if (!updatedQueue.some(t => t.id === id)) {
+        updatedQueue.push(track);
       }
 
+      await updateDoc(roomRef, {
+        currentSong: updatedQueue,
+        currentPlaying: track,
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+      });
+
+      // Update context
+      setVideoIds(updatedQueue);
+      setCurrentPlaying(track);
+    } catch (error) {
+      console.error('Error updating Firebase:', error);
+      setToastMsg('Failed to play track.');
+      setToastDisplay(true);
+      return;
+    }
+
+    if (isSpotify) {
       const token = sessionStorage.getItem('spotify_token');
       if (!token) {
-        alert("Spotify token missing. Please re-authenticate.");
+        setToastMsg('Spotify token missing. Please re-authenticate.');
+        setToastDisplay(true);
         return;
       }
 
-      // Dynamically mount SpotifyPlayer component for playback
+      // Mount SpotifyPlayer
       const playerElement = document.createElement('div');
+      playerElement.id = `spotify-player-${id}`;
       document.body.appendChild(playerElement);
 
-      const mountSpotifyPlayer = () => {
-        import('react-dom').then(ReactDOM =>
-          import('./SpotifyPlayer').then(module => {
-            const SpotifyPlayer = module.default;
-            ReactDOM.render(<SpotifyPlayer token={token} uri={uri} />, playerElement);
-          })
-        );
-      };
-
-      mountSpotifyPlayer();
-
-      // Update currentPlaying state
-      setCurrentPlaying({
-        title,
-        id,
-        image,
-        channelName,
-        platform: 'spotify'
-      });
-    } else {
-      // Stop Spotify playback before starting YouTube
-      if (currentPlaying?.platform === 'spotify') {
-        stopSpotifyPlayer();
-      }
-
-      // YouTube song logic
-      const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
-      const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
-      const updatedList = videoIds ? [song, ...videoIds] : [song];
-
-      await updateDoc(roomRef, {
-        currentSong: updatedList,
-        currentPlaying: song,
-        isPlaying: true,
-        currentTime: 0,
-        lastUpdated: Date.now()
-      }).catch(console.error);
-
-      // Update currentPlaying state
-      setCurrentPlaying({
-        title,
-        id,
-        image,
-        channelName,
-        platform: 'youtube'
-      });
+      import('react-dom').then(ReactDOM =>
+        import('./SpotifyPlayer').then(module => {
+          const SpotifyPlayer = module.default;
+          ReactDOM.render(<SpotifyPlayer token={token} uri={uri} />, playerElement);
+        })
+      );
     }
   };
 
@@ -121,13 +128,13 @@ const SongCard = ({
       addToQueue(image, title, id, channelName, platform, videoIds, name, uri);
       setToastMsg('Added to Queue');
     } else if (type === 'next') {
-      playNext(image, title, id, channelName, videoIds, currentPlaying, name);
+      playNext(image, title, id, channelName, videoIds, currentPlaying, name, platform, uri);
       setToastMsg('Added to Play Next');
     } else if (type === 'repeat') {
       addToQueue(image, title, id, channelName, platform, videoIds, name, uri);
       setToastMsg('Added to Repeat');
     } else if (type === 'shuffle') {
-      shuffule(image, title, id, channelName, videoIds, name);
+      shuffule(image, title, id, channelName, videoIds, name, platform, uri);
       setToastMsg('Added to Shuffle');
     }
     setToastDisplay(true);
@@ -137,13 +144,13 @@ const SongCard = ({
   return (
     <div className="flex flex-row m-3 justify-center items-center gap-2 text-white cursor-pointer">
       <img
-        src={currentPlaying?.platform === 'spotify' ? currentPlaying.image : image}
+        src={image}
         className="rounded-lg h-16 w-16"
         onClick={handlePlay}
         alt={title}
       />
       <p className="w-2/3" onClick={handlePlay}>
-        {currentPlaying?.platform === 'spotify' ? currentPlaying.title : title}
+        {title}
         {isSpotify && <span className="text-green-400 text-xs">(Spotify)</span>}
       </p>
 
