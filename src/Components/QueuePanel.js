@@ -23,7 +23,11 @@ const startSpotifyPlayer = (track, token) => {
   console.log('Starting Spotify playback for:', track.uri);
   const playerElement = document.createElement('div');
   playerElement.id = `spotify-player-${track.id}`;
-  document.getElementById('player-container')?.appendChild(playerElement);
+  const container = document.getElementById('player-container');
+  if (container) {
+    container.innerHTML = ''; // Clear existing players
+    container.appendChild(playerElement);
+  }
 
   import('react-dom').then(ReactDOM =>
     import('./SpotifyPlayer').then(module => {
@@ -46,7 +50,11 @@ const startYouTubePlayer = (id) => {
   console.log('Starting YouTube playback for:', id);
   const playerElement = document.createElement('div');
   playerElement.id = `youtube-player-${id}`;
-  document.getElementById('player-container')?.appendChild(playerElement);
+  const container = document.getElementById('player-container');
+  if (container) {
+    container.innerHTML = ''; // Clear existing players
+    container.appendChild(playerElement);
+  }
 
   import('react-dom').then(ReactDOM =>
     import('./YoutubeVideo').then(module => {
