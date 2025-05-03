@@ -1,22 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 import { HiPlay, HiPause } from 'react-icons/hi2';
+import axios from 'axios';
 
 const SpotifyPlayer = ({ uri, image, title, channelName }) => {
-  const { token } = useStateContext();
-  const [player, setPlayer] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [error, setError] = useState(null);
-  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
+  const { token, setToken } = useStateContext();
+  const [player, setPlayer] = useState(null); // Spotify Player instance
+  const [isPlaying, setIsPlaying] = useState(false); // Play/pause state
+  const [error, setError] = useState(null); // Error message
+  const [deviceId, setDeviceId] = useState(null); // Spotify device ID
+  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`; // Unique player ID
+
+  const refreshToken = async () => {
+    const refresh_token = sessionStorage.getItem('spotify_refresh_token');
+    if (!refresh_token) {
+      setError('No refresh token available. Please log in again.');
+      return null;
+    }
+    try {
+      console.log('SpotifyPlayer: Refreshing token');
+      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', {
+        refresh_token,
+      });
+      const { access_token, expires_in } = response.data;
+      sessionStorage.setItem('spotify_token', access_token);
+      sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+      setToken(access_token);
+      console.log('SpotifyPlayer: Token refreshed:', access_token);
+      return access_token;
+    } catch (err) {
+      console.error('SpotifyPlayer: Token refresh error:', err.response?.data || err.message);
+      setError('Failed to refresh Spotify token. Please log in again.');
+      return null;
+    }
+  };
 
   useEffect(() => {
-    const sessionToken = sessionStorage.getItem('spotify_token');
-    const activeToken = token || sessionToken;
-    console.log('SpotifyPlayer: Initializing with:', { activeToken, uri, title });
+    let sessionToken = sessionStorage.getItem('spotify_token');
+    const expiry = sessionStorage.getItem('spotify_token_expiry');
+    const isExpired = expiry && Date.now() >= parseInt(expiry);
+    console.log('SpotifyPlayer: Token status:', { sessionToken, isExpired, uri, title });
 
+    if (isExpired) {
+      console.log('SpotifyPlayer: Token expired, refreshing');
+      refreshToken().then(newToken => {
+        sessionToken = newToken;
+      });
+    }
+
+    const activeToken = token || sessionToken;
     if (!activeToken || !uri) {
       console.warn('SpotifyPlayer: Missing token or URI:', { activeToken, uri });
-      //setError('Cannot play track: Please log in or select a valid track.');
+      setError('Cannot play track: Please log in or select a valid track.');
       return;
     }
 
@@ -36,18 +71,13 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       spotifyPlayer.addListener('ready', ({ device_id }) => {
         console.log('SpotifyPlayer: Player ready, device_id:', device_id);
         setPlayer(spotifyPlayer);
-        // Play track immediately
-        spotifyPlayer
-          .play({ uris: [uri] })
-          .catch(err => {
-            console.error('SpotifyPlayer: Initial playback error:', err);
-            setError('Failed to start playback. Please try again.');
-          });
+        setDeviceId(device_id);
       });
 
       spotifyPlayer.addListener('not_ready', ({ device_id }) => {
         console.warn('SpotifyPlayer: Device offline:', device_id);
         setError('Spotify player is offline. Please check your connection.');
+        setDeviceId(null);
       });
 
       spotifyPlayer.addListener('player_state_changed', state => {
@@ -83,11 +113,6 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
           setError('Failed to connect to Spotify.');
         }
       });
-
-      return () => {
-        spotifyPlayer.disconnect();
-        console.log('SpotifyPlayer: Disconnected');
-      };
     };
 
     return () => {
@@ -100,7 +125,19 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
         existingPlayer.remove();
       }
     };
-  }, [token, uri, playerId]);
+  }, [token, uri, playerId, setToken]);
+
+  useEffect(() => {
+    if (player && deviceId && uri && !error) {
+      console.log('SpotifyPlayer: Attempting playback:', { uri, deviceId });
+      player
+        .play({ uris: [uri] })
+        .catch(err => {
+          console.error('SpotifyPlayer: Playback error:', err);
+          setError('Failed to play track. Please try again.');
+        });
+    }
+  }, [player, deviceId, uri, error]);
 
   const handlePlayPause = () => {
     if (player) {
