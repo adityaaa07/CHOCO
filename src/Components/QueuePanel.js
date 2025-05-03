@@ -13,9 +13,21 @@ const QueuePanel = () => {
   const handlePlayFromQueue = async (track) => {
     const roomCode = sessionStorage.getItem('roomCode');
     if (!roomCode) return;
+
+    // Set the currentPlaying in Firebase
     await updateDoc(doc(db, 'room', roomCode), {
       currentPlaying: track,
+      isPlaying: true,  // Ensure playback starts immediately
     });
+
+    // Handle playback logic based on track platform (Spotify or YouTube)
+    if (track.platform === 'spotify') {
+      stopYouTubePlayer();
+      startSpotifyPlayer(track.uri);
+    } else {
+      stopSpotifyPlayer();
+      startYouTubePlayer(track.id);
+    }
   };
 
   return (
