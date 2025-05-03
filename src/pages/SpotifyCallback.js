@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -8,10 +7,13 @@ const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken } = useStateContext();
 
-  // 🔁 Refresh access token if expired
   const refreshSpotifyToken = async () => {
     const refreshToken = sessionStorage.getItem('spotify_refresh_token');
-    if (!refreshToken) return;
+    if (!refreshToken) {
+      console.error('No refresh token found');
+      navigate('/');
+      return;
+    }
 
     try {
       const response = await axios.post('https://choco-flax.vercel.app/api/spotify/refresh', {
@@ -20,21 +22,22 @@ const SpotifyCallback = () => {
 
       const { access_token, expires_in } = response.data;
       if (access_token) {
-        // 🔐 Store updated token
         sessionStorage.setItem('spotify_token', access_token);
         sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
         localStorage.setItem('spotify_access_token', access_token);
         localStorage.setItem('loginSource', 'spotify');
-
         setToken(access_token);
         navigate('/home');
+      } else {
+        console.error('No access token in refresh response');
+        navigate('/');
       }
     } catch (error) {
       console.error("Failed to refresh token:", error);
+      navigate('/');
     }
   };
 
-  // ✅ Try to skip re-auth if valid token exists
   useEffect(() => {
     const storedToken = sessionStorage.getItem('spotify_token');
     const expiry = sessionStorage.getItem('spotify_token_expiry');
@@ -42,7 +45,6 @@ const SpotifyCallback = () => {
     if (storedToken && expiry && Date.now() < parseInt(expiry)) {
       localStorage.setItem('loginSource', 'spotify');
       localStorage.setItem('spotify_access_token', storedToken);
-
       setToken(storedToken);
       navigate('/home');
     } else if (sessionStorage.getItem('spotify_refresh_token')) {
@@ -50,7 +52,6 @@ const SpotifyCallback = () => {
     }
   }, [navigate, setToken]);
 
-  // 🔁 Handle Spotify redirect with `code`
   useEffect(() => {
     const fetchToken = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -59,31 +60,31 @@ const SpotifyCallback = () => {
 
       if (!code) {
         console.warn("No code found in URL");
+        navigate('/');
         return;
       }
 
       try {
         const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
-        console.log("Response from token API:", response.data);
+        console.log("Token API response:", response.data);
 
         const { access_token, refresh_token, expires_in } = response.data;
 
         if (access_token) {
-          // ✅ Store everything
           sessionStorage.setItem('spotify_token', access_token);
           sessionStorage.setItem('spotify_refresh_token', refresh_token);
           sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
-
           localStorage.setItem('spotify_access_token', access_token);
           localStorage.setItem('loginSource', 'spotify');
-
           setToken(access_token);
           navigate('/home');
         } else {
           console.error("Access token missing in response");
+          navigate('/');
         }
       } catch (error) {
-        console.error('Error getting Spotify token:', error);
+        console.error('Error getting Spotify token:', error.response?.data || error.message);
+        navigate('/');
       }
     };
 
@@ -94,4 +95,3 @@ const SpotifyCallback = () => {
 };
 
 export default SpotifyCallback;
-
