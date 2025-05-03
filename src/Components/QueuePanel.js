@@ -3,42 +3,40 @@ import { useStateContext } from '../Context/ContextProvider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase-config';
 
-// Stop the Spotify player if it's playing
 const stopSpotifyPlayer = () => {
-  const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
-  if (spotifyPlayer) {
-    spotifyPlayer.remove(); // Remove the Spotify player element
+  const spotifyPlayers = document.querySelectorAll('div[id^="spotify-player"]');
+  spotifyPlayers.forEach(player => {
+    player.remove();
     console.log("Spotify player stopped and removed.");
-  }
+  });
 };
 
-// Stop the YouTube player if it's playing
 const stopYouTubePlayer = () => {
-  const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
-  if (youtubePlayer) {
-    youtubePlayer.remove(); // Remove the YouTube player element
+  const youtubePlayers = document.querySelectorAll('div[id^="youtube-player"]');
+  youtubePlayers.forEach(player => {
+    player.remove();
     console.log("YouTube player stopped and removed.");
-  }
+  });
 };
 
-// Start Spotify playback (this is a placeholder, modify as per your Spotify player setup)
-const startSpotifyPlayer = (uri) => {
+const startSpotifyPlayer = (uri, token) => {
   console.log('Starting Spotify playback for:', uri);
   const playerElement = document.createElement('div');
+  playerElement.id = `spotify-player-${uri.split(':').pop()}`;
   document.body.appendChild(playerElement);
 
   import('react-dom').then(ReactDOM =>
     import('./SpotifyPlayer').then(module => {
       const SpotifyPlayer = module.default;
-      ReactDOM.render(<SpotifyPlayer token={sessionStorage.getItem('spotify_token')} uri={uri} />, playerElement);
+      ReactDOM.render(<SpotifyPlayer token={token} uri={uri} />, playerElement);
     })
   );
 };
 
-// Start YouTube playback (this is a placeholder, modify as per your YouTube player setup)
 const startYouTubePlayer = (id) => {
   console.log('Starting YouTube playback for:', id);
   const playerElement = document.createElement('div');
+  playerElement.id = `youtube-player-${id}`;
   document.body.appendChild(playerElement);
 
   import('react-dom').then(ReactDOM =>
@@ -54,33 +52,46 @@ const QueuePanel = () => {
     currentPlaying,
     videoIds,
     setCurrentPlaying,
+    setVideoIds,
   } = useStateContext();
 
   const handlePlayFromQueue = async (track) => {
     const roomCode = sessionStorage.getItem('roomCode');
     if (!roomCode) return;
 
-    // Update Firebase with the new current playing track
-    await updateDoc(doc(db, 'room', roomCode), {
-      currentPlaying: track,  // Set the current playing track
-      isPlaying: true,  // Ensure playback starts
-      currentTime: 0,  // Reset current time
-      lastUpdated: Date.now(),  // Update timestamp in Firebase
-    }).catch((error) => {
-      console.error('Error updating room data:', error);
-    });
+    // Update Firebase
+    const roomRef = doc(db, 'room', roomCode);
+    try {
+      await updateDoc(roomRef, {
+        currentPlaying: track,
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+      });
 
-    // Stop the other player based on the platform of the track being played
-    if (track.platform === 'spotify') {
-      stopYouTubePlayer();  // Stop YouTube if Spotify is selected
-      startSpotifyPlayer(track.uri);  // Start Spotify playback
-    } else {
-      stopSpotifyPlayer();  // Stop Spotify if YouTube is selected
-      startYouTubePlayer(track.id);  // Start YouTube playback
+      // Update context
+      setCurrentPlaying(track);
+      const updatedQueue = Array.isArray(videoIds) ? [...videoIds] : [];
+      if (!updatedQueue.some(t => t.id === track.id)) {
+        updatedQueue.push(track);
+        setVideoIds(updatedQueue);
+      }
+    } catch (error) {
+      console.error('Error updating room data:', error);
+      return;
     }
 
-    // Update the UI to reflect the current track being played
-    setCurrentPlaying(track);
+    // Stop the other player and start the new one
+    if (track.platform === 'spotify') {
+      stopYouTubePlayer();
+      const token = sessionStorage.getItem('spotify_token');
+      if (token && track.uri) {
+        startSpotifyPlayer(track.uri, token);
+      }
+    } else {
+      stopSpotifyPlayer();
+      startYouTubePlayer(track.id);
+    }
   };
 
   return (
@@ -91,7 +102,7 @@ const QueuePanel = () => {
       ) : (
         <ul className="space-y-2">
           {videoIds.map((track) => {
-            const isCurrent = currentPlaying?.id === track.id;  // Check if this track is the currently playing one
+            const isCurrent = currentPlaying?.id === track.id;
             return (
               <li
                 key={track.id}
