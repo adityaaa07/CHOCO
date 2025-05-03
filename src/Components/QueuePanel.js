@@ -8,6 +8,7 @@ const stopSpotifyPlayer = () => {
   const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
   if (spotifyPlayer) {
     spotifyPlayer.remove(); // Remove the Spotify player element
+    console.log("Spotify player stopped and removed.");
   }
 };
 
@@ -16,6 +17,7 @@ const stopYouTubePlayer = () => {
   const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
   if (youtubePlayer) {
     youtubePlayer.remove(); // Remove the YouTube player element
+    console.log("YouTube player stopped and removed.");
   }
 };
 
