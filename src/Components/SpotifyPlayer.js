@@ -435,18 +435,18 @@ import axios from 'axios';
 
 const SpotifyPlayer = ({ uri, image, title, channelName }) => {
   const { token, setToken } = useStateContext();
-  const [player, setPlayer] = useState(null); // Spotify Player instance
-  const [isPlaying, setIsPlaying] = useState(false); // Play/pause state
-  const [error, setError] = useState(null); // Error message
-  const [deviceId, setDeviceId] = useState(null); // Spotify device ID
-  const [duration, setDuration] = useState(0); // Track duration in seconds
-  const [currentTime, setCurrentTime] = useState(0); // Current playback position in seconds
-  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`; // Unique player ID
+  const [player, setPlayer] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
 
   const refreshToken = async () => {
     const refresh_token = sessionStorage.getItem('spotify_refresh_token');
     if (!refresh_token) {
-      setError('No refresh token available. Please log in again.');
+      setError('No refresh token available. Please log in to Spotify again.');
       return null;
     }
     try {
@@ -470,6 +470,10 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
   const fetchTrackDetails = async trackId => {
     const sessionToken = sessionStorage.getItem('spotify_token');
     const activeToken = token || sessionToken;
+    if (!activeToken) {
+      setError('No Spotify token available to fetch track details. Please log in again.');
+      return;
+    }
     try {
       const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
         headers: { Authorization: `Bearer ${activeToken}` },
@@ -483,6 +487,10 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
   };
 
   const playViaApi = async (trackUri, activeToken) => {
+    if (!activeToken) {
+      setError('No Spotify token available for API playback. Please log in again.');
+      return;
+    }
     try {
       console.log('SpotifyPlayer: Attempting playback via API:', { trackUri });
       await axios.put(
@@ -510,7 +518,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     const isExpired = expiry && Date.now() >= parseInt(expiry);
     console.log('SpotifyPlayer: Token status:', { sessionToken, isExpired, uri, title });
 
-    if (isExpired) {
+    if (isExpired && sessionToken) {
       console.log('SpotifyPlayer: Token expired, refreshing');
       refreshToken().then(newToken => {
         sessionToken = newToken;
@@ -518,9 +526,14 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     }
 
     const activeToken = token || sessionToken;
-    if (!activeToken || !uri) {
-      console.warn('SpotifyPlayer: Missing token or URI:', { activeToken, uri });
-      setError('Cannot play track: Please log in or select a valid track.');
+    if (!activeToken) {
+      console.warn('SpotifyPlayer: Missing token:', { activeToken, uri });
+      setError('Cannot play track: Please log in to Spotify.');
+      return;
+    }
+    if (!uri) {
+      console.warn('SpotifyPlayer: Missing URI:', { activeToken, uri });
+      setError('Cannot play track: No track selected.');
       return;
     }
 
@@ -530,6 +543,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     } else {
       console.error('SpotifyPlayer: Invalid URI format:', uri);
       setError('Invalid track URI. Please select a valid track.');
+      return;
     }
 
     const script = document.createElement('script');
@@ -544,6 +558,10 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
         getOAuthToken: cb => {
           const refreshedToken = token || sessionToken;
           console.log('SpotifyPlayer: Providing token to SDK:', refreshedToken);
+          if (!refreshedToken) {
+            setError('No Spotify token available for SDK. Please log in again.');
+            return cb('');
+          }
           cb(refreshedToken);
         },
         volume: 0.5,
@@ -656,10 +674,6 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     console.log('SpotifyPlayer: Next track not implemented');
   };
 
-  if (!uri || !title) {
-    return null;
-  }
-
   return (
     <div id={playerId} className="bg-black text-white p-4 flex flex-col items-center">
       {error && (
@@ -667,9 +681,13 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
           <p className="text-sm">{error}</p>
         </div>
       )}
-      <img src={image} alt={title} className="w-64 h-48 object-cover mb-2" />
-      <p className="text-lg font-medium truncate max-w-[300px]">{title}</p>
-      <p className="text-sm text-gray-400 truncate max-w-[300px]">{channelName}</p>
+      <img
+        src={image || 'https://via.placeholder.com/256x192?text=No+Image'}
+        alt={title || 'Unknown Track'}
+        className="w-64 h-48 object-cover mb-2"
+      />
+      <p className="text-lg font-medium truncate max-w-[300px]">{title || 'Unknown Track'}</p>
+      <p className="text-sm text-gray-400 truncate max-w-[300px]">{channelName || 'Unknown Artist'}</p>
       <div className="w-full max-w-[300px] mt-2">
         <div className="flex justify-between text-sm text-gray-400">
           <span>{formatTime(currentTime)}</span>
