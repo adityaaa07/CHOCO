@@ -100,8 +100,8 @@ const SpotifyPlayer = ({ token, uri }) => {
     };
   }, [token, uri]);
 
-  // This component does not render any UI
   return null;
 };
 
 export default SpotifyPlayer;
+
