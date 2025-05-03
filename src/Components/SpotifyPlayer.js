@@ -307,6 +307,7 @@ import React, { useEffect, useState } from 'react';
 const SpotifyPlayer = ({ token, uri }) => {
   const [player, setPlayer] = useState(null);
   const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
+  const [deviceId, setDeviceId] = useState(null); // Track device ID
 
   useEffect(() => {
     if (!token || !uri) {
@@ -328,7 +329,6 @@ const SpotifyPlayer = ({ token, uri }) => {
         volume: 0.5,
       });
 
-      // Error handling
       newPlayer.addListener('initialization_error', ({ message }) => {
         console.error('Init Error:', message);
       });
@@ -353,6 +353,7 @@ const SpotifyPlayer = ({ token, uri }) => {
       // Ready
       newPlayer.addListener('ready', async ({ device_id }) => {
         console.log('✅ Player ready with Device ID', device_id);
+        setDeviceId(device_id); // Save device ID for later use
         try {
           // Transfer playback
           const transferRes = await fetch('https://api.spotify.com/v1/me/player', {
@@ -418,7 +419,7 @@ const SpotifyPlayer = ({ token, uri }) => {
     };
   }, [token, uri, playerId]);
 
-  if (!token || !uri) {
+  if (!token || !uri || !deviceId) {
     return null; // Don't render if props are missing
   }
 
