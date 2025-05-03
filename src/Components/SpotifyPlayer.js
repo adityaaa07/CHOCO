@@ -6,7 +6,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 
   useEffect(() => {
     if (!token || !uri) {
-      console.error('SpotifyPlayer: Missing token or URI');
+      console.error('SpotifyPlayer: Missing token or URI', { token, uri });
       return;
     }
 
@@ -47,7 +47,6 @@ const SpotifyPlayer = ({ token, uri }) => {
       // Ready
       newPlayer.addListener('ready', async ({ device_id }) => {
         console.log('✅ Player ready with Device ID', device_id);
-
         try {
           // Transfer playback
           const transferRes = await fetch('https://api.spotify.com/v1/me/player', {
@@ -98,7 +97,6 @@ const SpotifyPlayer = ({ token, uri }) => {
     };
 
     return () => {
-      // Cleanup
       if (player) {
         player.disconnect();
         console.log('❎ Spotify player disconnected');
@@ -113,6 +111,10 @@ const SpotifyPlayer = ({ token, uri }) => {
       }
     };
   }, [token, uri, playerId]);
+
+  if (!token || !uri) {
+    return null; // Don't render if props are missing
+  }
 
   return <div id={playerId} style={{ display: 'none' }} />;
 };
