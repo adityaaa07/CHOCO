@@ -252,6 +252,7 @@ const SongCard = ({
       setToastMsg('Invalid track data.');
       setToastDisplay(true);
       console.error('SongCard: Invalid track data:', { image, title, id, channelName, uri });
+      console.log("Track being set as currentPlaying:", track);
       return;
     }
 
