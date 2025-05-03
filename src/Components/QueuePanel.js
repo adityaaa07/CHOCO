@@ -96,9 +96,7 @@ const QueuePanel = () => {
               <li
                 key={track.id}
                 onClick={() => handlePlayFromQueue(track)}
-                className={`p-2 rounded-md cursor-pointer hover:bg-zinc-800 transition-all duration-200 ${
-                  isCurrent ? 'bg-indigo-700 bg-opacity-30 border border-indigo-500' : ''
-                }`}
+                className={`p-2 rounded-md cursor-pointer hover:bg-zinc-800 transition-all duration-200 ${isCurrent ? 'bg-indigo-700 bg-opacity-30 border border-indigo-500' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm opacity-60">
