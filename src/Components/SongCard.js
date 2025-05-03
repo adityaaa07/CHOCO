@@ -33,26 +33,40 @@ const SongCard = ({
   const name = Cookies.get('name');
 
   const stopSpotifyPlayer = () => {
-    const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
-    if (spotifyPlayer) {
-      spotifyPlayer.remove();
+    const spotifyPlayers = document.querySelectorAll('div[id^="spotify-player"]');
+    spotifyPlayers.forEach(player => {
+      player.remove();
       console.log("Spotify player stopped and removed.");
-    }
+    });
   };
 
   const stopYouTubePlayer = () => {
-    const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
-    if (youtubePlayer) {
-      youtubePlayer.remove();
+    const youtubePlayers = document.querySelectorAll('div[id^="youtube-player"]');
+    youtubePlayers.forEach(player => {
+      player.remove();
       console.log("YouTube player stopped and removed.");
-    }
+    });
   };
 
   const handlePlay = async () => {
+    if (!name) {
+      setToastMsg('Please log in to play tracks.');
+      setToastDisplay(true);
+      return;
+    }
+
     const roomCode = sessionStorage.getItem('roomCode');
     if (!roomCode) {
       setToastMsg('Please join a room first!');
       setToastDisplay(true);
+      return;
+    }
+
+    // Validate track properties
+    if (!image || !title || !id || !channelName || (isSpotify && !uri)) {
+      setToastMsg('Invalid track data.');
+      setToastDisplay(true);
+      console.error('Invalid track data:', { image, title, id, channelName, uri });
       return;
     }
 
@@ -63,7 +77,7 @@ const SongCard = ({
       channelName,
       platform: isSpotify ? 'spotify' : 'youtube',
       playedBy: name,
-      ...(isSpotify && uri ? { uri } : {}),
+      ...(isSpotify ? { uri } : {}),
     };
 
     // Stop the other platform's player
@@ -73,10 +87,9 @@ const SongCard = ({
       stopSpotifyPlayer();
     }
 
-    // Update Firebase with the new current playing track
+    // Update Firebase
     const roomRef = doc(db, 'room', roomCode);
     try {
-      // Add track to queue if not already present
       const updatedQueue = Array.isArray(videoIds) ? [...videoIds] : [];
       if (!updatedQueue.some(t => t.id === id)) {
         updatedQueue.push(track);
@@ -90,8 +103,7 @@ const SongCard = ({
         lastUpdated: Date.now(),
       });
 
-      // Update context
-      setVideoIds(updatedQueue);
+      setVideoIds(updatedQueueoccollegedays);
       setCurrentPlaying(track);
     } catch (error) {
       console.error('Error updating Firebase:', error);
@@ -108,7 +120,6 @@ const SongCard = ({
         return;
       }
 
-      // Mount SpotifyPlayer
       const playerElement = document.createElement('div');
       playerElement.id = `spotify-player-${id}`;
       document.body.appendChild(playerElement);
@@ -123,6 +134,12 @@ const SongCard = ({
   };
 
   const handleAdd = (type) => {
+    if (!image || !title || !id || !channelName || (isSpotify && !uri)) {
+      setToastMsg('Invalid track data.');
+      setToastDisplay(true);
+      return;
+    }
+
     const platform = isSpotify ? 'spotify' : 'youtube';
     if (type === 'queue') {
       addToQueue(image, title, id, channelName, platform, videoIds, name, uri);
