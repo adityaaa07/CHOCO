@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStateContext } from '../Context/ContextProvider';
@@ -33,8 +32,27 @@ const SongCard = ({
   const nav = useNavigate();
   const name = Cookies.get('name');
 
+  const stopSpotifyPlayer = () => {
+    const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
+    if (spotifyPlayer) {
+      spotifyPlayer.remove(); // Remove the player
+    }
+  };
+
+  const stopYouTubePlayer = () => {
+    const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
+    if (youtubePlayer) {
+      youtubePlayer.remove(); // Remove the player
+    }
+  };
+
   const handlePlay = async () => {
     if (isSpotify) {
+      // Stop YouTube playback before starting Spotify
+      if (currentPlaying?.platform === 'youtube') {
+        stopYouTubePlayer();
+      }
+
       const token = sessionStorage.getItem('spotify_token');
       if (!token) {
         alert("Spotify token missing. Please re-authenticate.");
@@ -55,21 +73,25 @@ const SongCard = ({
       };
 
       mountSpotifyPlayer();
-      return;
+    } else {
+      // Stop Spotify playback before starting YouTube
+      if (currentPlaying?.platform === 'spotify') {
+        stopSpotifyPlayer();
+      }
+
+      // YouTube song logic
+      const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
+      const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
+      const updatedList = videoIds ? [song, ...videoIds] : [song];
+
+      await updateDoc(roomRef, {
+        currentSong: updatedList,
+        currentPlaying: song,
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now()
+      }).catch(console.error);
     }
-
-    // YouTube song logic
-    const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
-    const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
-    const updatedList = videoIds ? [song, ...videoIds] : [song];
-
-    await updateDoc(roomRef, {
-      currentSong: updatedList,
-      currentPlaying: song,
-      isPlaying: true,
-      currentTime: 0,
-      lastUpdated: Date.now()
-    }).catch(console.error);
   };
 
   const handleAdd = (type) => {
