@@ -14,7 +14,6 @@ const addToQueue=async(image,title,id,channelName,songs,name)=>{
 export default addToQueue*/
 import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
-
 const addToQueue = async (image, title, id, channelName, platform, songs, name, uri = null) => {
   // Validate inputs
   if (!image || !title || !id || !channelName || !name || (platform === 'spotify' && !uri)) {
