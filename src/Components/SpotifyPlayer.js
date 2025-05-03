@@ -1,5 +1,267 @@
 import React, { useEffect, useState } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
+import { HiPlay, HiPause, HiForward, HiRewind } from 'react-icons/hi2';
+import axios from 'axios';
+
+const SpotifyPlayer = ({ uri, image, title, channelName }) => {
+  const { token, setToken } = useStateContext();
+  const [player, setPlayer] = useState(null); // Spotify Player instance
+  const [isPlaying, setIsPlaying] = useState(false); // Play/pause state
+  const [error, setError] = useState(null); // Error message
+  const [deviceId, setDeviceId] = useState(null); // Spotify device ID
+  const [duration, setDuration] = useState(0); // Track duration in seconds
+  const [currentTime, setCurrentTime] = useState(0); // Current playback position in seconds
+  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`; // Unique player ID
+
+  const refreshToken = async () => {
+    const refresh_token = sessionStorage.getItem('spotify_refresh_token');
+    if (!refresh_token) {
+      setError('No refresh token available. Please log in again.');
+      return null;
+    }
+    try {
+      console.log('SpotifyPlayer: Refreshing token');
+      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', {
+        refresh_token,
+      });
+      const { access_token, expires_in } = response.data;
+      sessionStorage.setItem('spotify_token', access_token);
+      sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+      setToken(access_token);
+      console.log('SpotifyPlayer: Token refreshed:', access_token);
+      return access_token;
+    } catch (err) {
+      console.error('SpotifyPlayer: Token refresh error:', err.response?.data || err.message);
+      setError('Failed to refresh Spotify token. Please log in again.');
+      return null;
+    }
+  };
+
+  const fetchTrackDetails = async trackId => {
+    const sessionToken = sessionStorage.getItem('spotify_token');
+    const activeToken = token || sessionToken;
+    try {
+      const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      setDuration(Math.floor(response.data.duration_ms / 1000));
+      console.log('SpotifyPlayer: Fetched track duration:', response.data.duration_ms);
+    } catch (err) {
+      console.error('SpotifyPlayer: Error fetching track details:', err.response?.data || err.message);
+      setError('Failed to fetch track details. Playback may still work.');
+    }
+  };
+
+  const formatTime = seconds => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  useEffect(() => {
+    let sessionToken = sessionStorage.getItem('spotify_token');
+    const expiry = sessionStorage.getItem('spotify_token_expiry');
+    const isExpired = expiry && Date.now() >= parseInt(expiry);
+    console.log('SpotifyPlayer: Token status:', { sessionToken, isExpired, uri, title });
+
+    if (isExpired) {
+      console.log('SpotifyPlayer: Token expired, refreshing');
+      refreshToken().then(newToken => {
+        sessionToken = newToken;
+      });
+    }
+
+    const activeToken = token || sessionToken;
+    if (!activeToken || !uri) {
+      console.warn('SpotifyPlayer: Missing token or URI:', { activeToken, uri });
+      setError('Cannot play track: Please log in or select a valid track.');
+      return;
+    }
+
+    // Extract track ID from URI (spotify:track:<id>)
+    const trackId = uri.split(':')[2];
+    if (trackId) {
+      fetchTrackDetails(trackId);
+    } else {
+      console.error('SpotifyPlayer: Invalid URI format:', uri);
+      setError('Invalid track URI. Please select a valid track.');
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log('SpotifyPlayer: Spotify SDK Ready');
+      const spotifyPlayer = new window.Spotify.Player({
+        name: 'Choco Web Player',
+        getOAuthToken: cb => cb(activeToken),
+        volume: 0.5,
+      });
+
+      spotifyPlayer.addListener('ready', ({ device_id }) => {
+        console.log('SpotifyPlayer: Player ready, device_id:', device_id);
+        setPlayer(spotifyPlayer);
+        setDeviceId(device_id);
+      });
+
+      spotifyPlayer.addListener('not_ready', ({ device_id }) => {
+        console.warn('SpotifyPlayer: Device offline:', device_id);
+        setError('Spotify player is offline. Please check your connection.');
+        setDeviceId(null);
+      });
+
+      spotifyPlayer.addListener('player_state_changed', state => {
+        if (state) {
+          setIsPlaying(!state.paused);
+          setCurrentTime(Math.floor(state.position / 1000));
+          console.log('SpotifyPlayer: State changed:', state);
+        }
+      });
+
+      spotifyPlayer.addListener('initialization_error', ({ message }) => {
+        console.error('SpotifyPlayer: Initialization error:', message);
+        setError('Failed to initialize Spotify player.');
+      });
+
+      spotifyPlayer.addListener('authentication_error', ({ message }) => {
+        console.error('SpotifyPlayer: Authentication error:', message);
+        setError('Spotify authentication failed. Please log in again.');
+      });
+
+      spotifyPlayer.addListener('account_error', ({ message }) => {
+        console.error('SpotifyPlayer: Account error:', message);
+        setError('Spotify account issue: ' + message);
+      });
+
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        console.error('SpotifyPlayer: Playback error:', message);
+        setError('Playback error: ' + message);
+      });
+
+      spotifyPlayer.connect().then(success => {
+        console.log('SpotifyPlayer: Connect status:', success);
+        if (!success) {
+          setError('Failed to connect to Spotify.');
+        }
+      });
+    };
+
+    return () => {
+      if (player) {
+        player.disconnect();
+      }
+      document.body.removeChild(script);
+      const existingPlayer = document.getElementById(playerId);
+      if (existingPlayer) {
+        existingPlayer.remove();
+      }
+    };
+  }, [token, uri, playerId, setToken]);
+
+  useEffect(() => {
+    if (player && deviceId && uri && !error) {
+      console.log('SpotifyPlayer: Attempting playback:', { uri, deviceId });
+      player
+        .play({ uris: [uri] })
+        .catch(err => {
+          console.error('SpotifyPlayer: Playback error:', err);
+          setError('Failed to play track. Retrying...');
+          // Retry after a delay
+          setTimeout(() => {
+            player.play({ uris: [uri] }).catch(retryErr => {
+              console.error('SpotifyPlayer: Retry playback error:', retryErr);
+              setError('Failed to play track after retry. Please try again.');
+            });
+          }, 2000);
+        });
+    }
+  }, [player, deviceId, uri, error]);
+
+  const handlePlayPause = () => {
+    if (player) {
+      if (isPlaying) {
+        player.pause();
+      } else {
+        player.resume();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handlePrevious = () => {
+    console.log('SpotifyPlayer: Previous track not implemented');
+    // Implement previous track logic if needed
+  };
+
+  const handleNext = () => {
+    console.log('SpotifyPlayer: Next track not implemented');
+    // Implement next track logic if needed
+  };
+
+  if (error) {
+    return (
+      <div className="bg-zinc-800 text-white p-4 rounded-lg">
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!uri || !title) {
+    return null;
+  }
+
+  return (
+    <div id={playerId} className="bg-black text-white p-4 flex flex-col items-center">
+      <img src={image} alt={title} className="w-64 h-48 object-cover mb-2" />
+      <p className="text-lg font-medium truncate max-w-[300px]">{title}</p>
+      <p className="text-sm text-gray-400 truncate max-w-[300px]">{channelName}</p>
+      <div className="w-full max-w-[300px] mt-2">
+        <div className="flex justify-between text-sm text-gray-400">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max={duration}
+          value={currentTime}
+          className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+          style={{ accentColor: 'white' }}
+          readOnly
+        />
+      </div>
+      <div className="flex gap-4 mt-2">
+        <button
+          onClick={handlePrevious}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label="Previous"
+        >
+          <HiRewind size={24} />
+        </button>
+        <button
+          onClick={handlePlayPause}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? <HiPause size={24} /> : <HiPlay size={24} />}
+        </button>
+        <button
+          onClick={handleNext}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label="Next"
+        >
+          <HiForward size={24} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SpotifyPlayer;
+/*import React, { useEffect, useState } from 'react';
+import { useStateContext } from '../Context/ContextProvider';
 import { HiPlay, HiPause } from 'react-icons/hi2';
 import axios from 'axios';
 
@@ -179,7 +441,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
 };
 
 export default SpotifyPlayer;
-
+*/
 /*
 import React, { useEffect, useState } from 'react';
 
