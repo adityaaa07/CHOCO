@@ -34,7 +34,7 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
       setDuration(data.duration_ms / 1000);
     } catch (err) {
       console.error('Error fetching track duration:', err);
-      setDuration(0); // Fallback to 0 if API call fails
+      setDuration(0);
     }
   };
 
@@ -246,7 +246,7 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
     }
   };
 
-  if (!token || !uri) {
+  if (!token || !uri || !roomCode) {
     return null;
   }
 
@@ -289,7 +289,6 @@ const SpotifyPlayer = ({ token, uri, image, title, channelName }) => {
 };
 
 export default SpotifyPlayer;
-
 /*
 import React, { useEffect, useState } from 'react';
 
