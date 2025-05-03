@@ -28,7 +28,7 @@ const SongCard = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const toggle = () => setDropdownOpen(prev => !prev);
-  const { videoIds, currentPlaying } = useStateContext();
+  const { videoIds, currentPlaying, setCurrentPlaying } = useStateContext();
   const nav = useNavigate();
   const name = Cookies.get('name');
 
@@ -76,6 +76,15 @@ const SongCard = ({
       };
 
       mountSpotifyPlayer();
+
+      // Update currentPlaying state
+      setCurrentPlaying({
+        title,
+        id,
+        image,
+        channelName,
+        platform: 'spotify'
+      });
     } else {
       // Stop Spotify playback before starting YouTube
       if (currentPlaying?.platform === 'spotify') {
@@ -94,6 +103,15 @@ const SongCard = ({
         currentTime: 0,
         lastUpdated: Date.now()
       }).catch(console.error);
+
+      // Update currentPlaying state
+      setCurrentPlaying({
+        title,
+        id,
+        image,
+        channelName,
+        platform: 'youtube'
+      });
     }
   };
 
@@ -119,13 +137,14 @@ const SongCard = ({
   return (
     <div className="flex flex-row m-3 justify-center items-center gap-2 text-white cursor-pointer">
       <img
-        src={image}
+        src={currentPlaying?.platform === 'spotify' ? currentPlaying.image : image}
         className="rounded-lg h-16 w-16"
         onClick={handlePlay}
         alt={title}
       />
       <p className="w-2/3" onClick={handlePlay}>
-        {title} {isSpotify && <span className="text-green-400 text-xs">(Spotify)</span>}
+        {currentPlaying?.platform === 'spotify' ? currentPlaying.title : title}
+        {isSpotify && <span className="text-green-400 text-xs">(Spotify)</span>}
       </p>
 
       <Dropdown isOpen={dropdownOpen} toggle={toggle} direction="down">
