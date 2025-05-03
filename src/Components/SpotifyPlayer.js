@@ -238,7 +238,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
           className="text-white hover:text-gray-300 focus:outline-none"
           aria-label="Previous"
         >
-          <HiRewind size={24} />
+         // <HiRewind size={24} />
         </button>
         <button
           onClick={handlePlayPause}
