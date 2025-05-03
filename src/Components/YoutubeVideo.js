@@ -3,6 +3,7 @@ import { db } from '../firebase-config';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useStateContext } from '../Context/ContextProvider';
 import { HiMusicalNote } from 'react-icons/hi2';
+
 const YouTubeVideo = ({ videoIds }) => {
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
