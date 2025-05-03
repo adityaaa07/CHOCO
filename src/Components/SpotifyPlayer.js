@@ -1,4 +1,150 @@
 import React, { useEffect, useState } from 'react';
+import { useStateContext } from '../Context/ContextProvider';
+import { HiPlay, HiPause } from 'react-icons/hi2';
+
+const SpotifyPlayer = ({ uri, image, title, channelName }) => {
+  const { token } = useStateContext();
+  const [player, setPlayer] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState(null);
+  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
+
+  useEffect(() => {
+    const sessionToken = sessionStorage.getItem('spotify_token');
+    const activeToken = token || sessionToken;
+    console.log('SpotifyPlayer: Initializing with:', { activeToken, uri, title });
+
+    if (!activeToken || !uri) {
+      console.warn('SpotifyPlayer: Missing token or URI:', { activeToken, uri });
+      setError('Cannot play track: Please log in or select a valid track.');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log('SpotifyPlayer: Spotify SDK Ready');
+      const spotifyPlayer = new window.Spotify.Player({
+        name: 'Choco Web Player',
+        getOAuthToken: cb => cb(activeToken),
+        volume: 0.5,
+      });
+
+      spotifyPlayer.addListener('ready', ({ device_id }) => {
+        console.log('SpotifyPlayer: Player ready, device_id:', device_id);
+        setPlayer(spotifyPlayer);
+        // Play track immediately
+        spotifyPlayer
+          .play({ uris: [uri] })
+          .catch(err => {
+            console.error('SpotifyPlayer: Initial playback error:', err);
+            setError('Failed to start playback. Please try again.');
+          });
+      });
+
+      spotifyPlayer.addListener('not_ready', ({ device_id }) => {
+        console.warn('SpotifyPlayer: Device offline:', device_id);
+        setError('Spotify player is offline. Please check your connection.');
+      });
+
+      spotifyPlayer.addListener('player_state_changed', state => {
+        if (state) {
+          setIsPlaying(!state.paused);
+          console.log('SpotifyPlayer: State changed:', state);
+        }
+      });
+
+      spotifyPlayer.addListener('initialization_error', ({ message }) => {
+        console.error('SpotifyPlayer: Initialization error:', message);
+        setError('Failed to initialize Spotify player.');
+      });
+
+      spotifyPlayer.addListener('authentication_error', ({ message }) => {
+        console.error('SpotifyPlayer: Authentication error:', message);
+        setError('Spotify authentication failed. Please log in again.');
+      });
+
+      spotifyPlayer.addListener('account_error', ({ message }) => {
+        console.error('SpotifyPlayer: Account error:', message);
+        setError('Spotify account issue: ' + message);
+      });
+
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        console.error('SpotifyPlayer: Playback error:', message);
+        setError('Playback error: ' + message);
+      });
+
+      spotifyPlayer.connect().then(success => {
+        console.log('SpotifyPlayer: Connect status:', success);
+        if (!success) {
+          setError('Failed to connect to Spotify.');
+        }
+      });
+
+      return () => {
+        spotifyPlayer.disconnect();
+        console.log('SpotifyPlayer: Disconnected');
+      };
+    };
+
+    return () => {
+      if (player) {
+        player.disconnect();
+      }
+      document.body.removeChild(script);
+      const existingPlayer = document.getElementById(playerId);
+      if (existingPlayer) {
+        existingPlayer.remove();
+      }
+    };
+  }, [token, uri, playerId]);
+
+  const handlePlayPause = () => {
+    if (player) {
+      if (isPlaying) {
+        player.pause();
+      } else {
+        player.resume();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="bg-zinc-800 text-white p-4 rounded-lg">
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!uri || !title) {
+    return null;
+  }
+
+  return (
+    <div id={playerId} className="bg-zinc-800 text-white p-4 rounded-lg flex flex-col items-center">
+      <img src={image} alt={title} className="w-32 h-32 rounded-lg mb-2" />
+      <p className="text-sm font-medium truncate max-w-[200px]">{title}</p>
+      <p className="text-xs text-zinc-400 truncate max-w-[200px]">{channelName}</p>
+      <button
+        onClick={handlePlayPause}
+        className="mt-2 text-white hover:text-indigo-300 focus:outline-none"
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+      >
+        {isPlaying ? <HiPause size={24} /> : <HiPlay size={24} />}
+      </button>
+    </div>
+  );
+};
+
+export default SpotifyPlayer;
+
+/*
+import React, { useEffect, useState } from 'react';
 
 const SpotifyPlayer = ({ token, uri }) => {
   const [player, setPlayer] = useState(null);
@@ -118,7 +264,7 @@ const SpotifyPlayer = ({ token, uri }) => {
   return <div id={playerId} style={{ display: 'none' }} />;
 };
 
-export default SpotifyPlayer;
+export default SpotifyPlayer; */
 /*
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
