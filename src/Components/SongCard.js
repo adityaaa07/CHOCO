@@ -103,7 +103,7 @@ const SongCard = ({
         lastUpdated: Date.now(),
       });
 
-      setVideoIds(updatedQueueoccollegedays);
+      setVideoIds(updatedQueue);
       setCurrentPlaying(track);
     } catch (error) {
       console.error('Error updating Firebase:', error);
