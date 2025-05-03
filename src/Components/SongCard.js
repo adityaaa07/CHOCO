@@ -36,6 +36,7 @@ const SongCard = ({
     const spotifyPlayer = document.querySelector('div[id^="spotify-player"]');
     if (spotifyPlayer) {
       spotifyPlayer.remove(); // Remove the player
+      console.log("Spotify player stopped and removed.");
     }
   };
 
@@ -43,10 +44,12 @@ const SongCard = ({
     const youtubePlayer = document.querySelector('div[id^="youtube-player"]');
     if (youtubePlayer) {
       youtubePlayer.remove(); // Remove the player
+      console.log("YouTube player stopped and removed.");
     }
   };
 
   const handlePlay = async () => {
+    // Stop the other platform's player when switching to a new song
     if (isSpotify) {
       // Stop YouTube playback before starting Spotify
       if (currentPlaying?.platform === 'youtube') {
@@ -82,7 +85,7 @@ const SongCard = ({
       // YouTube song logic
       const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
       const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
-      const updatedList = videoIds ? [song, ...videoIds] : [song]; 
+      const updatedList = videoIds ? [song, ...videoIds] : [song];
 
       await updateDoc(roomRef, {
         currentSong: updatedList,
