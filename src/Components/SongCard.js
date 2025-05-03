@@ -82,7 +82,7 @@ const SongCard = ({
       // YouTube song logic
       const song = { title, id, image, channelName, playedBy: name, platform: 'youtube' };
       const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
-      const updatedList = videoIds ? [song, ...videoIds] : [song];
+      const updatedList = videoIds ? [song, ...videoIds] : [song]; 
 
       await updateDoc(roomRef, {
         currentSong: updatedList,
