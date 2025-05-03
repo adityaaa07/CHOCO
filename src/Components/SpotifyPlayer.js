@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
-import { HiPlay, HiPause, HiForward, HiRewind } from 'react-icons/hi2';
+import { HiPlay, HiPause, HiForward } from 'react-icons/hi2';
 import axios from 'axios';
 
 const SpotifyPlayer = ({ uri, image, title, channelName }) => {
