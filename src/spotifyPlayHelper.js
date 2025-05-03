@@ -11,7 +11,7 @@ export const getSpotifyAccessToken = () => {
 
 export const playSpotifyTrack = async (trackUri) => {
   const token = getSpotifyAccessToken();
-  const device_id = localStorage.getItem('spotifyDeviceId'); // save deviceId when ready
+  const device_id = localStorage.getItem('spotifyDeviceId'); // Save deviceId when ready
 
   if (!token || !device_id) {
     console.error('Missing token or device ID for Spotify playback.');
@@ -32,6 +32,7 @@ export const playSpotifyTrack = async (trackUri) => {
     console.error('Error playing Spotify track:', error);
   }
 };
+
 /*
 import Cookies from 'js-cookie';
 
