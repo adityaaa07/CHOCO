@@ -24,7 +24,6 @@ const stopYouTubePlayer = () => {
 // Start Spotify playback (this is a placeholder, modify as per your Spotify player setup)
 const startSpotifyPlayer = (uri) => {
   console.log('Starting Spotify playback for:', uri);
-  // Assuming you have a SpotifyPlayer component to manage playback
   const playerElement = document.createElement('div');
   document.body.appendChild(playerElement);
 
@@ -39,7 +38,6 @@ const startSpotifyPlayer = (uri) => {
 // Start YouTube playback (this is a placeholder, modify as per your YouTube player setup)
 const startYouTubePlayer = (id) => {
   console.log('Starting YouTube playback for:', id);
-  // Assuming you have a YouTubeVideo component to manage playback
   const playerElement = document.createElement('div');
   document.body.appendChild(playerElement);
 
