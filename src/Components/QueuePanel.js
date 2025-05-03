@@ -42,7 +42,7 @@ const startYouTubePlayer = (id) => {
   document.body.appendChild(playerElement);
 
   import('react-dom').then(ReactDOM =>
-    import('./YouTubeVideo').then(module => {
+    import('./YoutubeVideo').then(module => {
       const YouTubeVideo = module.default;
       ReactDOM.render(<YouTubeVideo videoIds={[{ id }]} />, playerElement);
     })
