@@ -9,7 +9,6 @@ const SpotifyPlayer = ({ token, uri }) => {
       console.error('SpotifyPlayer: Missing token or URI', { token, uri });
       return;
     }
-
     // Load Spotify SDK
     const script = document.createElement('script');
     script.src = 'https://sdk.scdn.co/spotify-player.js';
