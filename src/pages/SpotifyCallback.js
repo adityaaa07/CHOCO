@@ -2,7 +2,6 @@ import axios from 'axios';
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from "../Context/ContextProvider";
-
 const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken } = useStateContext();
