@@ -1,8 +1,8 @@
-// src/components/SpotifyPlayer.js
 import React, { useEffect, useState } from 'react';
 
 const SpotifyPlayer = ({ token, uri }) => {
   const [player, setPlayer] = useState(null);
+
   useEffect(() => {
     if (!token) {
       console.error('SpotifyPlayer: no token provided');
@@ -103,4 +103,3 @@ const SpotifyPlayer = ({ token, uri }) => {
 };
 
 export default SpotifyPlayer;
-
