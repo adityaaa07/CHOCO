@@ -12,7 +12,47 @@ const addToQueue=async(image,title,id,channelName,songs,name)=>{
     
 }
 export default addToQueue*/
+import { db } from "../firebase-config";
+import { updateDoc, doc } from "firebase/firestore";
 
+const addToQueue = async (image, title, id, channelName, platform, songs, name, uri = null) => {
+  const track = {
+    image,
+    title,
+    id,
+    channelName,
+    platform, // 'spotify' or 'youtube'
+    playedBy: name,
+  };
+
+  if (platform === 'spotify' && uri) {
+    track.uri = uri;
+  }
+
+  // Check if songs is an array, if not, initialize it as an empty array
+  if (!Array.isArray(songs)) {
+    songs = [];
+  }
+
+  const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
+
+  // Add the track to the queue (currentSong)
+  songs.push(track);
+
+  try {
+    // Update Firebase with the updated currentSong and currentPlaying
+    await updateDoc(roomRef, {
+      currentSong: [...songs],  // Update the queue
+      currentPlaying: track,    // Set the new track as currently playing
+    });
+    console.log("Queue updated in Firebase successfully.");
+  } catch (err) {
+    console.error("Error updating the queue in Firebase:", err);
+  }
+};
+
+export default addToQueue;
+/*
 import { db } from "../firebase-config";
 import { updateDoc, doc } from "firebase/firestore";
 
@@ -46,3 +86,4 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
 };
 
 export default addToQueue;
+*/
