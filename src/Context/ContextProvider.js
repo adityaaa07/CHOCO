@@ -1,4 +1,70 @@
-import React, { useContext, createContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from './firebase-config';
+import { onAuthStateChanged } from 'firebase/auth';
+
+const StateContext = createContext();
+
+export const ContextProvider = ({ children }) => {
+  const [modal_backdrop, setmodal_backdrop] = useState(false);
+  const [notification, setNotification] = useState(0);
+  const [pathName, setPathName] = useState('/');
+  const [messages, setMessages] = useState([]);
+  const [token, setToken] = useState('');
+  const [videoIds, setVideoIds] = useState([]);
+  const [currentPlaying, setCurrentPlaying] = useState(null);
+  const [loginSource, setLoginSource] = useState(localStorage.getItem('loginSource') || '');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setPathName('/home');
+        console.log('User authenticated:', user.uid);
+      } else {
+        setPathName('/');
+        console.warn('No authenticated user');
+      }
+    }, (error) => {
+      console.error('Auth state error:', error.message);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const spotifyToken = sessionStorage.getItem('spotify_token') || localStorage.getItem('spotify_access_token');
+    if (spotifyToken && loginSource === 'spotify') {
+      setToken(spotifyToken);
+      console.log('Spotify token set:', spotifyToken);
+    }
+  }, [loginSource]);
+
+  return (
+    <StateContext.Provider
+      value={{
+        modal_backdrop,
+        setmodal_backdrop,
+        notification,
+        setNotification,
+        pathName,
+        setPathName,
+        messages,
+        setMessages,
+        token,
+        setToken,
+        videoIds,
+        setVideoIds,
+        currentPlaying,
+        setCurrentPlaying,
+        loginSource,
+        setLoginSource,
+      }}
+    >
+      {children}
+    </StateContext.Provider>
+  );
+};
+
+export const useStateContext = () => useContext(StateContext);
+/*import React, { useContext, createContext, useState, useEffect, useRef } from "react";
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import Cookies from 'js-cookie';
 import { db } from '../firebase-config';
@@ -94,7 +160,7 @@ export const ContextProvider = ({ children }) => {
 };
 
 export const useStateContext = () => useContext(StateContext);
-
+-------------------------------------------------------------------------*/
 /*
 import React, { useContext, createContext, useState, useEffect, useRef } from "react";
 import { collection, query, orderBy, onSnapshot, doc, addDoc, Timestamp, updateDoc } from 'firebase/firestore';
