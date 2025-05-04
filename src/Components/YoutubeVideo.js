@@ -20,6 +20,7 @@ const YouTubeVideo = ({ videoIds }) => {
     setCurrentTime,
     setPlayedBy,
   } = useStateContext();
+  const docRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
 
   const onVideoEnd = () => {
     if (videoIds.length > 1) {
