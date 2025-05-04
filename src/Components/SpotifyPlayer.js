@@ -741,12 +741,13 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       return null;
     }
     try {
-      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', {
+      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/refresh', {
         refresh_token,
       });
       const { access_token, expires_in } = response.data;
       sessionStorage.setItem('spotify_token', access_token);
       sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+      localStorage.setItem('spotify_access_token', access_token);
       setToken(access_token);
       console.log('Spotify token refreshed');
       return access_token;
@@ -801,24 +802,31 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     const expiry = sessionStorage.getItem('spotify_token_expiry');
     const isExpired = expiry && Date.now() >= parseInt(expiry);
 
+    // Validate token and URI
+    if (!sessionToken) {
+      setError('No Spotify token available. Please log in.');
+      console.error('No Spotify token');
+      return;
+    }
+    if (!uri || !uri.includes('spotify:track:')) {
+      setError('Invalid or missing track URI.');
+      console.error('Invalid track URI:', uri);
+      return;
+    }
+
     if (isExpired) {
       refreshToken().then((newToken) => {
         sessionToken = newToken;
       });
     }
 
-    if (!sessionToken || !uri) {
-      setError('Cannot play track: Please log in or select a valid track.');
-      console.error('Invalid Spotify token or URI');
-      return;
-    }
-
     const trackId = uri.split(':')[2];
     if (trackId) {
       fetchTrackDetails(trackId, sessionToken);
     } else {
-      setError('Invalid track URI.');
-      console.error('Invalid track URI:', uri);
+      setError('Invalid track URI format.');
+      console.error('Invalid track URI format:', uri);
+      return;
     }
 
     const script = document.createElement('script');
