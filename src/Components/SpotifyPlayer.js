@@ -302,7 +302,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 
 export default SpotifyPlayer; 
 ---------------------------------------------------------------------------------------------------------------------------------*/
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 
 const SpotifyPlayer = ({ token, uri }) => {
   const [player, setPlayer] = useState(null);
@@ -427,7 +427,156 @@ const SpotifyPlayer = ({ token, uri }) => {
 };
 
 export default SpotifyPlayer;
+-------------------------------------ye vala ekdummast chalraha*/
+import React, { useEffect, useState, useRef } from 'react';
 
+const SpotifyPlayer = ({ token, uri }) => {
+  const [player, setPlayer] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [paused, setPaused] = useState(true);
+  const [track, setTrack] = useState(null);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!token || !uri) {
+      console.error('Missing token or URI');
+      return;
+    }
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const newPlayer = new window.Spotify.Player({
+        name: 'Choco Web Player',
+        getOAuthToken: cb => cb(token),
+        volume: 0.5,
+      });
+
+      newPlayer.addListener('ready', async ({ device_id }) => {
+        setDeviceId(device_id);
+
+        // Transfer playback to the Web Playback SDK
+        await fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ device_ids: [device_id], play: true }),
+        });
+
+        // Play the track
+        await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ uris: [uri] }),
+        });
+      });
+
+      newPlayer.addListener('player_state_changed', state => {
+        if (!state) return;
+
+        const {
+          paused,
+          position,
+          duration,
+          track_window: { current_track },
+        } = state;
+
+        setPaused(paused);
+        setTrack(current_track);
+        setPosition(position);
+        setDuration(duration);
+      });
+
+      newPlayer.connect();
+      setPlayer(newPlayer);
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      if (player) player.disconnect();
+      const sdkScript = document.querySelector('script[src="https://sdk.scdn.co/spotify-player.js"]');
+      if (sdkScript) sdkScript.remove();
+      delete window.onSpotifyWebPlaybackSDKReady;
+    };
+  }, [token, uri]);
+
+  // Optional: update progress every second
+  useEffect(() => {
+    if (!paused && player) {
+      intervalRef.current = setInterval(() => {
+        player.getCurrentState().then(state => {
+          if (state) setPosition(state.position);
+        });
+      }, 1000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => clearInterval(intervalRef.current);
+  }, [paused, player]);
+
+  const handlePlayPause = () => {
+    if (player) player.togglePlay();
+  };
+
+  const handleNext = () => {
+    if (player) player.nextTrack();
+  };
+
+  const handlePrevious = () => {
+    if (player) player.previousTrack();
+  };
+
+  const handleSeek = e => {
+    const newPos = (e.target.value / 100) * duration;
+    player.seek(newPos);
+    setPosition(newPos);
+  };
+
+  return (
+    <div style={{ padding: '1rem', border: '1px solid #ccc', borderRadius: '1rem', maxWidth: 400 }}>
+      {track ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+            <img src={track.album.images[0].url} alt="Album Art" width="64" height="64" />
+            <div style={{ marginLeft: '1rem' }}>
+              <div><strong>{track.name}</strong></div>
+              <div>{track.artists.map(artist => artist.name).join(', ')}</div>
+            </div>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={duration ? (position / duration) * 100 : 0}
+            onChange={handleSeek}
+            style={{ width: '100%' }}
+          />
+
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-around' }}>
+            <button onClick={handlePrevious}>⏮️</button>
+            <button onClick={handlePlayPause}>{paused ? '▶️ Play' : '⏸️ Pause'}</button>
+            <button onClick={handleNext}>⏭️</button>
+          </div>
+        </>
+      ) : (
+        <div>Loading track...</div>
+      )}
+    </div>
+  );
+};
+
+export default SpotifyPlayer;
 
 /*
 import React, { useEffect, useState, useRef } from 'react';
