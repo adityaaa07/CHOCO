@@ -60,11 +60,9 @@ const SpotifyCallback = () => {
       const expiry = sessionStorage.getItem('spotify_token_expiry');
       const refreshToken = sessionStorage.getItem('spotify_refresh_token');
 
-      // Check if token is valid
+      // Use existing token if valid
       if (storedToken && expiry && Date.now() < parseInt(expiry)) {
         console.log('Using existing Spotify token');
-        localStorage.setItem('loginSource', 'spotify');
-        localStorage.setItem('spotify_access_token', storedToken);
         setToken(storedToken);
         setLoginSource('spotify');
         await fetchUserInfo(storedToken);
@@ -72,7 +70,7 @@ const SpotifyCallback = () => {
         return;
       }
 
-      // Try refreshing token if refresh_token exists
+      // Refresh token if available
       if (refreshToken) {
         const newToken = await refreshSpotifyToken();
         if (newToken) {
@@ -82,7 +80,7 @@ const SpotifyCallback = () => {
         }
       }
 
-      // Handle new login
+      // Handle new Spotify login
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       if (!code) {
@@ -93,11 +91,23 @@ const SpotifyCallback = () => {
       }
 
       try {
-        // Authenticate with Firebase
-        await signInAnonymously(auth);
-        console.log('Signed in anonymously to Firebase');
+        // Attempt anonymous Firebase auth
+        try {
+          await signInAnonymously(auth);
+          console.log('Signed in anonymously to Firebase');
+        } catch (authError) {
+          console.error('Firebase auth error:', authError.code, authError.message);
+          if (authError.code === 'auth/admin-restricted-operation') {
+            setError('Anonymous authentication is disabled in Firebase. Please enable it or use another auth method.');
+            // Proceed without auth for testing (not recommended for production)
+            console.warn('Proceeding without Firebase auth (temporary)');
+          } else {
+            throw authError;
+          }
+        }
 
         // Request Spotify token
+        console.log('Requesting Spotify token with code:', code);
         const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', { code });
         const { access_token, refresh_token, expires_in } = response.data;
 
@@ -121,7 +131,7 @@ const SpotifyCallback = () => {
         navigate('/home');
       } catch (error) {
         console.error('Spotify callback error:', error.message, error.response?.data);
-        setError('Authentication failed: ' + error.message);
+        setError('Authentication failed: ' + (error.response?.data?.error || error.message));
         navigate('/');
       }
     };
@@ -134,7 +144,7 @@ const SpotifyCallback = () => {
       {error ? (
         <div className="bg-red-600 p-4 rounded-lg">
           <p>Error: {error}</p>
-          <p>Please try logging in again.</p>
+          <p>Please try logging in again or contact support.</p>
         </div>
       ) : (
         <p>Authenticating with Spotify...</p>
