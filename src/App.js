@@ -12,7 +12,7 @@ import styled from 'styled-components'; // or import { css } from '@emotion/reac
 import { useStateContext } from './Context/ContextProvider';
 import Profile from './pages/Profile';
 import Cookies from 'js-cookie';
-import SpotifyPlayer from './Components/SpotifyPlayer';
+//import SpotifyPlayer from './Components/SpotifyPlayer';
 import Privacypolicy from './pages/Privacypolicy';
 import Terms from './pages/Terms';
 import Thirdparty from './pages/Thirdparty';
@@ -38,7 +38,7 @@ function App() {
  
   return (
     <>
-      {showSpotifyPlayer && <SpotifyPlayer />}
+    //  {showSpotifyPlayer && <SpotifyPlayer />}
     <div className='bg-black h-screen'> 
       <StyledText>
       {
