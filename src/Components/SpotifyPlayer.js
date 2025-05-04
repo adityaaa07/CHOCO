@@ -528,40 +528,55 @@ const SpotifyPlayer = ({ token, uri }) => {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem', border: '1px solid #ccc', borderRadius: 12 }}>
-      {track ? (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <img src={track.album.images[0].url} alt="Album Art" width="64" height="64" />
-            <div style={{ marginLeft: '1rem' }}>
-              <strong>{track.name}</strong>
-              <br />
-              <span>{track.artists.map(a => a.name).join(', ')}</span>
-            </div>
-          </div>
-
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={duration ? (position / duration) * 100 : 0}
-            onChange={handleSeek}
-            style={{ width: '100%', marginTop: '1rem' }}
+  <div
+    style={{
+      maxWidth: 600, // increased width
+      margin: '2rem auto',
+      padding: '2rem', // more padding
+      border: '1px solid #ccc',
+      borderRadius: 16,
+      backgroundColor: '#f9f9f9',
+    }}
+  >
+    {track ? (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src={track.album.images[0].url}
+            alt="Album Art"
+            width="128"
+            height="128" // larger image
+            style={{ borderRadius: 8 }}
           />
-
-          <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '1rem' }}>
-            <button onClick={handlePrevious}>⏮️</button>
-            <button onClick={handlePlayPause}>{paused ? '▶️ Play' : '⏸️ Pause'}</button>
-            <button onClick={handleNext}>⏭️</button>
+          <div style={{ marginLeft: '1.5rem' }}>
+            <strong style={{ fontSize: '1.5rem' }}>{track.name}</strong>
+            <br />
+            <span style={{ fontSize: '1.2rem' }}>{track.artists.map(a => a.name).join(', ')}</span>
           </div>
-        </>
-      ) : (
-        <p></p>
-      )}
-    </div>
-  );
-};
+        </div>
 
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={duration ? (position / duration) * 100 : 0}
+          onChange={handleSeek}
+          style={{ width: '100%', marginTop: '1.5rem', height: '8px' }}
+        />
+
+        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '1.5rem' }}>
+          <button style={{ fontSize: '1.5rem', padding: '0.5rem 1rem' }} onClick={handlePrevious}>⏮️</button>
+          <button style={{ fontSize: '1.5rem', padding: '0.5rem 1.5rem' }} onClick={handlePlayPause}>
+            {paused ? '▶️ Play' : '⏸️ Pause'}
+          </button>
+          <button style={{ fontSize: '1.5rem', padding: '0.5rem 1rem' }} onClick={handleNext}>⏭️</button>
+        </div>
+      </>
+    ) : (
+      <p>Loading player...</p>
+    )}
+  </div>
+);
 export default SpotifyPlayer;
 
 
