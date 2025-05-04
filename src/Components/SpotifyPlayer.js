@@ -428,7 +428,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 
 export default SpotifyPlayer;
 latest----------------------------------------------------------------------------------------------------------------*/
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 import { useStateContext } from '../Context/ContextProvider';
 import { HiPlay, HiPause, HiForward, HiBackward } from 'react-icons/hi2';
 import axios from 'axios';
@@ -683,6 +683,338 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
           className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
           style={{ accentColor: 'white' }}
           readOnly
+        />
+      </div>
+      <div className="flex gap-4 mt-2">
+        <button
+          onClick={handlePrevious}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label="Previous"
+        >
+          <HiBackward size={24} />
+        </button>
+        <button
+          onClick={handlePlayPause}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? <HiPause size={24} /> : <HiPlay size={24} />}
+        </button>
+        <button
+          onClick={handleNext}
+          className="text-white hover:text-gray-300 focus:outline-none"
+          aria-label="Next"
+        >
+          <HiForward size={24} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SpotifyPlayer;
+----------------------------------------------------sabse latest yaar */
+import React, { useEffect, useState, useCallback } from 'react';
+import { useStateContext } from '../Context/ContextProvider';
+import { HiPlay, HiPause, HiForward, HiBackward } from 'react-icons/hi2';
+import axios from 'axios';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase-config';
+
+const SpotifyPlayer = ({ uri, image, title, channelName }) => {
+  const { token, setToken, videoIds, currentPlaying, setCurrentPlaying } = useStateContext();
+  const [player, setPlayer] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const playerId = `spotify-player-${uri ? uri.split(':').pop() : 'default'}`;
+  const roomCode = sessionStorage.getItem('roomCode') || 'default';
+  const roomRef = doc(db, 'room', roomCode);
+
+  const refreshToken = useCallback(async () => {
+    const refresh_token = sessionStorage.getItem('spotify_refresh_token');
+    if (!refresh_token) {
+      setError('No refresh token available. Please log in again.');
+      console.error('No Spotify refresh token');
+      return null;
+    }
+    try {
+      const response = await axios.post('https://choco-flax.vercel.app/api/spotify/token', {
+        refresh_token,
+      });
+      const { access_token, expires_in } = response.data;
+      sessionStorage.setItem('spotify_token', access_token);
+      sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
+      setToken(access_token);
+      console.log('Spotify token refreshed');
+      return access_token;
+    } catch (err) {
+      console.error('Token refresh error:', err.message);
+      setError('Failed to refresh Spotify token.');
+      return null;
+    }
+  }, [setToken]);
+
+  const fetchTrackDetails = async (trackId, activeToken) => {
+    try {
+      const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      setDuration(Math.floor(response.data.duration_ms / 1000));
+      console.log('Track details fetched:', response.data.name);
+    } catch (err) {
+      console.error('Error fetching track details:', err.message);
+      setError('Failed to fetch track details.');
+    }
+  };
+
+  const playViaApi = async (trackUri, activeToken) => {
+    try {
+      await axios.put(
+        'https://api.spotify.com/v1/me/player/play',
+        { uris: [trackUri] },
+        { headers: { Authorization: `Bearer ${activeToken}` } }
+      );
+      setIsPlaying(true);
+      await updateDoc(roomRef, {
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+      });
+      console.log('Playing via API:', trackUri);
+    } catch (err) {
+      console.error('API playback error:', err.message);
+      setError('Failed to play via API: ' + (err.response?.data?.error?.message || err.message));
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  useEffect(() => {
+    let sessionToken = token || sessionStorage.getItem('spotify_token');
+    const expiry = sessionStorage.getItem('spotify_token_expiry');
+    const isExpired = expiry && Date.now() >= parseInt(expiry);
+
+    if (isExpired) {
+      refreshToken().then((newToken) => {
+        sessionToken = newToken;
+      });
+    }
+
+    if (!sessionToken || !uri) {
+      setError('Cannot play track: Please log in or select a valid track.');
+      console.error('Invalid Spotify token or URI');
+      return;
+    }
+
+    const trackId = uri.split(':')[2];
+    if (trackId) {
+      fetchTrackDetails(trackId, sessionToken);
+    } else {
+      setError('Invalid track URI.');
+      console.error('Invalid track URI:', uri);
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const spotifyPlayer = new window.Spotify.Player({
+        name: 'Choco Web Player',
+        getOAuthToken: (cb) => cb(sessionToken),
+        volume: 0.5,
+      });
+
+      spotifyPlayer.addListener('ready', ({ device_id }) => {
+        setPlayer(spotifyPlayer);
+        setDeviceId(device_id);
+        console.log('Spotify player ready:', device_id);
+      });
+
+      spotifyPlayer.addListener('not_ready', ({ device_id }) => {
+        setError('Spotify player is offline. Trying API playback...');
+        setDeviceId(null);
+        playViaApi(uri, sessionToken);
+        console.warn('Spotify player not ready:', device_id);
+      });
+
+      spotifyPlayer.addListener('player_state_changed', (state) => {
+        if (state) {
+          setIsPlaying(!state.paused);
+          setCurrentTime(Math.floor(state.position / 1000));
+          setDuration(Math.floor(state.duration / 1000));
+          updateDoc(roomRef, {
+            isPlaying: !state.paused,
+            currentTime: Math.floor(state.position / 1000),
+            lastUpdated: Date.now(),
+          }).then(() => {
+            console.log('Playback state updated in Firebase');
+          }).catch((err) => {
+            console.error('Error updating playback state:', err.message);
+          });
+        }
+      });
+
+      spotifyPlayer.addListener('initialization_error', ({ message }) => {
+        setError('Failed to initialize Spotify player: ' + message);
+        console.error('Spotify initialization error:', message);
+      });
+
+      spotifyPlayer.addListener('authentication_error', ({ message }) => {
+        setError('Spotify authentication failed: ' + message);
+        console.error('Spotify authentication error:', message);
+        refreshToken();
+      });
+
+      spotifyPlayer.addListener('account_error', ({ message }) => {
+        setError('Spotify account issue: ' + message);
+        console.error('Spotify account error:', message);
+      });
+
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        setError('Playback error: ' + message);
+        console.error('Spotify playback error:', message);
+        playViaApi(uri, sessionToken);
+      });
+
+      spotifyPlayer.connect();
+    };
+
+    return () => {
+      if (player) {
+        player.disconnect();
+        setPlayer(null);
+        console.log('Spotify player disconnected');
+      }
+      document.body.removeChild(script);
+      const existingPlayer = document.getElementById(playerId);
+      if (existingPlayer) {
+        existingPlayer.remove();
+      }
+    };
+  }, [uri, token, refreshToken, roomRef, playerId]);
+
+  useEffect(() => {
+    if (player && deviceId && uri && !error) {
+      player.play({ uris: [uri] }).catch((err) => {
+        setError('Failed to play track. Retrying...');
+        console.error('Spotify play error:', err.message);
+        setTimeout(() => {
+          player.play({ uris: [uri] }).catch((retryErr) => {
+            setError('Failed to play track after retry.');
+            console.error('Spotify retry error:', retryErr.message);
+            playViaApi(uri, token || sessionStorage.getItem('spotify_token'));
+          });
+        }, 2000);
+      });
+    }
+  }, [player, deviceId, uri, error, token]);
+
+  const handlePlayPause = async () => {
+    if (player) {
+      if (isPlaying) {
+        player.pause();
+        await updateDoc(roomRef, { isPlaying: false, currentTime, lastUpdated: Date.now() });
+        console.log('Paused playback');
+      } else {
+        player.resume();
+        await updateDoc(roomRef, { isPlaying: true, currentTime, lastUpdated: Date.now() });
+        console.log('Resumed playback');
+      }
+      setIsPlaying(!isPlaying);
+    } else {
+      playViaApi(uri, token || sessionStorage.getItem('spotify_token'));
+    }
+  };
+
+  const handlePrevious = async () => {
+    const index = videoIds.findIndex((track) => track.id === currentPlaying.id);
+    if (index > 0) {
+      const prevTrack = videoIds[index - 1];
+      await updateDoc(roomRef, {
+        currentPlaying: prevTrack,
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+      });
+      setCurrentPlaying(prevTrack);
+      if (player && prevTrack.platform === 'spotify') {
+        player.play({ uris: [prevTrack.uri] });
+      }
+      console.log('Switched to previous track:', prevTrack.title);
+    }
+  };
+
+  const handleNext = async () => {
+    const index = videoIds.findIndex((track) => track.id === currentPlaying.id);
+    if (index < videoIds.length - 1) {
+      const nextTrack = videoIds[index + 1];
+      await updateDoc(roomRef, {
+        currentPlaying: nextTrack,
+        isPlaying: true,
+        currentTime: 0,
+        lastUpdated: Date.now(),
+      });
+      setCurrentPlaying(nextTrack);
+      if (player && nextTrack.platform === 'spotify') {
+        player.play({ uris: [nextTrack.uri] });
+      }
+      console.log('Switched to next track:', nextTrack.title);
+    }
+  };
+
+  if (!uri || !title) {
+    return null;
+  }
+
+  return (
+    <div id={playerId} className="bg-black text-white p-4 flex flex-col items-center">
+      {error && (
+        <div className="bg-zinc-800 text-red-400 p-2 rounded-lg mb-2">
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+      {image ? (
+        <img src={image} alt={title} className="w-64 h-48 object-cover mb-2 rounded-lg" />
+      ) : (
+        <div className="w-64 h-48 bg-gray-600 flex items-center justify-center mb-2 rounded-lg">
+          <p className="text-gray-400">No cover available</p>
+        </div>
+      )}
+      <p className="text-lg font-medium truncate max-w-[300px]">{title}</p>
+      <p className="text-sm text-gray-400 truncate max-w-[300px]">{channelName}</p>
+      <div className="w-full max-w-[300px] mt-2">
+        <div className="flex justify-between text-sm text-gray-400">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max={duration}
+          value={currentTime}
+          onChange={(e) => {
+            const newTime = parseInt(e.target.value);
+            setCurrentTime(newTime);
+            if (player) {
+              player.seek(newTime * 1000);
+              updateDoc(roomRef, { currentTime: newTime, lastUpdated: Date.now() }).then(() => {
+                console.log('Seek updated in Firebase');
+              }).catch((err) => {
+                console.error('Error updating seek:', err.message);
+              });
+            }
+          }}
+          className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+          style={{ accentColor: 'white' }}
         />
       </div>
       <div className="flex gap-4 mt-2">
