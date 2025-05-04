@@ -376,7 +376,7 @@ const SongCard = ({
 
 export default SongCard;
 */
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStateContext } from '../Context/ContextProvider';
 import { db } from '../firebase-config';
@@ -390,10 +390,11 @@ import {
 } from 'react-icons/io5';
 import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
 import addToQueue from '../Functions/addToQueue';
-import shuffule from '../Functions/shuffle'; // Fixed typo: shuffule -> shuffle
+import shuffule from '../Functions/shuffle';
 import playNext from '../Functions/playNext';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import debounce from 'lodash/debounce';
 
 const SongCard = ({
   image,
@@ -440,71 +441,74 @@ const SongCard = ({
     }
   };
 
-  const handlePlay = async () => {
-    if (!image || !title || !id || !channelName || (isSpotify && (!uri || !uri.startsWith('spotify:track:')))) {
-      setToastMsg('Invalid track data.');
-      setToastDisplay(true);
-      console.error('SongCard: Invalid track data:', { image, title, id, channelName, uri });
-      return;
-    }
-
-    const track = {
-      title,
-      id,
-      image,
-      channelName,
-      platform: isSpotify ? 'spotify' : 'youtube',
-      playedBy: name,
-      ...(isSpotify ? { uri } : {}),
-    };
-
-    // Log token and state for debugging
-    let sessionToken = token || sessionStorage.getItem('spotify_token');
-    const expiry = sessionStorage.getItem('spotify_token_expiry');
-    const isExpired = expiry && Date.now() >= parseInt(expiry);
-    console.log('SongCard: Playing track:', track);
-    console.log('SongCard: Token status:', { contextToken: token, sessionToken, isExpired });
-
-    // Refresh token if expired
-    if (isSpotify && isExpired && sessionToken) {
-      sessionToken = await refreshToken();
-      if (!sessionToken) return;
-    }
-
-    // Validate videoIds
-    const updatedQueue = Array.isArray(videoIds) ? [...videoIds] : [];
-    if (!updatedQueue.some(t => t.id === track.id)) {
-      updatedQueue.push(track);
-    }
-
-    try {
-      await updateDoc(roomRef, {
-        currentSong: arrayUnion(track),
-        currentPlaying: track,
-        isPlaying: true,
-        currentTime: 0,
-        lastUpdated: Date.now(),
-      });
-
-      setVideoIds(updatedQueue);
-      setCurrentPlaying(track);
-      console.log('SongCard: Track set as currentPlaying:', track);
-
-      if (isSpotify && !sessionToken) {
-        console.warn('SongCard: No Spotify token found. Playback may fail.');
-        setToastMsg('Spotify authentication needed. Please log in.');
+  const debouncedHandlePlay = useCallback(
+    debounce(async () => {
+      if (!image || !title || !id || !channelName || (isSpotify && (!uri || !uri.startsWith('spotify:track:')))) {
+        setToastMsg('Invalid track data.');
         setToastDisplay(true);
-        nav('/'); // Redirect to login
-      } else {
-        setToastMsg(`Playing "${title}"`);
+        console.error('SongCard: Invalid track data:', { image, title, id, channelName, uri });
+        return;
+      }
+
+      const track = {
+        title,
+        id,
+        image,
+        channelName,
+        platform: isSpotify ? 'spotify' : 'youtube',
+        playedBy: name,
+        ...(isSpotify ? { uri } : {}),
+      };
+
+      // Log token and state for debugging
+      let sessionToken = token || sessionStorage.getItem('spotify_token');
+      const expiry = sessionStorage.getItem('spotify_token_expiry');
+      const isExpired = expiry && Date.now() >= parseInt(expiry);
+      console.log('SongCard: Playing track:', track);
+      console.log('SongCard: Token status:', { contextToken: token, sessionToken, isExpired });
+
+      // Refresh token if expired
+      if (isSpotify && isExpired && sessionToken) {
+        sessionToken = await refreshToken();
+        if (!sessionToken) return;
+      }
+
+      // Validate videoIds
+      const updatedQueue = Array.isArray(videoIds) ? [...videoIds] : [];
+      if (!updatedQueue.some(t => t.id === track.id)) {
+        updatedQueue.push(track);
+      }
+
+      try {
+        await updateDoc(roomRef, {
+          currentSong: arrayUnion(track),
+          currentPlaying: track,
+          isPlaying: true,
+          currentTime: 0,
+          lastUpdated: Date.now(),
+        });
+
+        setVideoIds(updatedQueue);
+        setCurrentPlaying(track);
+        console.log('SongCard: Track set as currentPlaying:', track);
+
+        if (isSpotify && !sessionToken) {
+          console.warn('SongCard: No Spotify token found. Playback may fail.');
+          setToastMsg('Spotify authentication needed. Please log in.');
+          setToastDisplay(true);
+          nav('/');
+        } else {
+          setToastMsg(`Playing "${title}"`);
+          setToastDisplay(true);
+        }
+      } catch (error) {
+        console.error('SongCard: Error updating Firebase:', error.message, error.code);
+        setToastMsg('Failed to play track. Check your connection or try logging in again.');
         setToastDisplay(true);
       }
-    } catch (error) {
-      console.error('SongCard: Error updating Firebase:', error.message, error.code);
-      setToastMsg('Failed to play track. Check your connection or try logging in again.');
-      setToastDisplay(true);
-    }
-  };
+    }, 1000, { leading: true, trailing: false }),
+    [image, title, id, channelName, uri, isSpotify, token, videoIds, name, setToken, setVideoIds, setCurrentPlaying, nav, setToastDisplay, setToastMsg]
+  );
 
   const handleAdd = (type) => {
     if (!image || !title || !id || !channelName || (isSpotify && (!uri || !uri.startsWith('spotify:track:')))) {
@@ -544,10 +548,10 @@ const SongCard = ({
       <img
         src={image}
         className="rounded-lg h-16 w-16"
-        onClick={handlePlay}
+        onClick={debouncedHandlePlay}
         alt={title || 'Song'}
       />
-      <p className="w-2/3" onClick={handlePlay}>
+      <p className="w-2/3" onClick={debouncedHandlePlay}>
         {title || 'Unknown Title'}
         {isSpotify && <span className="text-green-400 text-xs">(Spotify)</span>}
       </p>
