@@ -38,7 +38,6 @@ function App() {
  
   return (
     <>
-    //  {showSpotifyPlayer && <SpotifyPlayer />}
     <div className='bg-black h-screen'> 
       <StyledText>
       {
