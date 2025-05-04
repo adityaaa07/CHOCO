@@ -12,6 +12,7 @@ const SCOPES = [
   "user-modify-playback-state",
   "playlist-read-private",
   "playlist-read-collaborative",
+  "user-read-currently-playing",
 ];
 
 const SpotifyAuth = () => {
