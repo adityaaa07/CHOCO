@@ -428,7 +428,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 
 export default SpotifyPlayer;
 -------------------------------------ye vala ekdummast chalraha*/
-import React, { useEffect, useState, useRef } from 'react';
+/* import React, { useEffect, useState, useRef } from 'react';
 
 const SpotifyPlayer = ({ token, uri }) => {
   const [player, setPlayer] = useState(null);
@@ -577,7 +577,142 @@ const SpotifyPlayer = ({ token, uri }) => {
       )}
     </div>
   );
-  export default SpotifyPlayer;
+  export default SpotifyPlayer; */  //NEWESTTTTT
+import React, { useEffect, useState, useRef } from 'react';
+
+const SpotifyPlayer = ({ token, uri }) => {
+  const [player, setPlayer] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [paused, setPaused] = useState(true);
+  const [track, setTrack] = useState(null);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!token || !uri) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const newPlayer = new window.Spotify.Player({
+        name: 'React Spotify Player',
+        getOAuthToken: cb => cb(token),
+        volume: 0.5,
+      });
+
+      newPlayer.addListener('ready', async ({ device_id }) => {
+        setDeviceId(device_id);
+
+        // Transfer playback
+        await fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers: {
+            'Authorization': Bearer ${token},
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            device_ids: [device_id],
+            play: true,
+          }),
+        });
+
+        // Start playing the song
+        await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            'Authorization': Bearer ${token},
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uris: [uri] }),
+        });
+      });
+
+      newPlayer.addListener('player_state_changed', state => {
+        if (!state) return;
+
+        const { paused, position, duration, track_window } = state;
+        setPaused(paused);
+        setPosition(position);
+        setDuration(duration);
+        setTrack(track_window.current_track);
+      });
+
+      newPlayer.connect();
+      setPlayer(newPlayer);
+    };
+
+    return () => {
+      if (player) player.disconnect();
+      const sdkScript = document.querySelector('script[src="https://sdk.scdn.co/spotify-player.js"]');
+      if (sdkScript) sdkScript.remove();
+      delete window.onSpotifyWebPlaybackSDKReady;
+    };
+  }, [token, uri]);
+
+  // Track progress bar
+  useEffect(() => {
+    if (!paused && player) {
+      intervalRef.current = setInterval(() => {
+        player.getCurrentState().then(state => {
+          if (state) setPosition(state.position);
+        });
+      }, 1000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => clearInterval(intervalRef.current);
+  }, [paused, player]);
+
+  const handlePlayPause = () => player && player.togglePlay();
+  const handleNext = () => player && player.nextTrack();
+  const handlePrevious = () => player && player.previousTrack();
+  const handleSeek = (e) => {
+    const newPos = (e.target.value / 100) * duration;
+    player.seek(newPos);
+    setPosition(newPos);
+  };
+
+  return (
+    <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem', border: '1px solid #ccc', borderRadius: 12 }}>
+      {track ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img src={track.album.images[0].url} alt="Album Art" width="64" height="64" />
+            <div style={{ marginLeft: '1rem' }}>
+              <strong>{track.name}</strong>
+              <br />
+              <span>{track.artists.map(a => a.name).join(', ')}</span>
+            </div>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={duration ? (position / duration) * 100 : 0}
+            onChange={handleSeek}
+            style={{ width: '100%', marginTop: '1rem' }}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '1rem' }}>
+            <button onClick={handlePrevious}>⏮️</button>
+            <button onClick={handlePlayPause}>{paused ? '▶️ Play' : '⏸️ Pause'}</button>
+            <button onClick={handleNext}>⏭️</button>
+          </div>
+        </>
+      ) : (
+        <p></p>
+      )}
+    </div>
+  );
+};
+
+export default SpotifyPlayer;
 
 
 /*
