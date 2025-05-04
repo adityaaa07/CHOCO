@@ -5,7 +5,6 @@ import { useStateContext } from '../Context/ContextProvider';
 import Cookies from 'js-cookie';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '../firebase-config';
-
 const SpotifyCallback = () => {
   const navigate = useNavigate();
   const { setToken, setLoginSource } = useStateContext();
