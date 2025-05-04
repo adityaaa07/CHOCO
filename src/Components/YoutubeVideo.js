@@ -8,7 +8,7 @@ const YouTubeVideo = ({ videoIds }) => {
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
   const [id, setId] = useState('');
-
+  const [playerReady, setPlayerReady]= useState(false);
   const {
     setOnReady,
     setTitle,
@@ -31,7 +31,7 @@ const YouTubeVideo = ({ videoIds }) => {
       }).catch(console.log);
     }
   };
-  useEffect(() => {
+ useEffect(() => {
     const unsub = onSnapshot(docRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -67,6 +67,9 @@ const YouTubeVideo = ({ videoIds }) => {
       }
     });
 
+    return () => unsub();
+  }, [playerReady]);
+
   /*useEffect(() => {
     const roomCode = sessionStorage.getItem('roomCode');
     const docRef = doc(db, 'room', roomCode);
@@ -84,10 +87,10 @@ const YouTubeVideo = ({ videoIds }) => {
         }
       }
     });
-*/
+
     return () => unsub();
   }, []);
-
+*/
   useEffect(() => {
     if (!id) return;
 
