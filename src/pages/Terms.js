@@ -41,7 +41,7 @@ const Terms = () => {
       </p> */}
       <h6>Contact Us</h6>
       <p>
-        If you have any questions or concerns about these terms of service, please contact us at rajadeepak1989@gmail.com.
+        If you have any questions or concerns about these terms of service, please contact us at 21103084@mail.jiit.ac.in.
       </p>
       </div>
     </div>
