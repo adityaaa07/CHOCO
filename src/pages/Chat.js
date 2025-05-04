@@ -1,166 +1,142 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, addDoc, Timestamp, updateDoc } from 'firebase/firestore';
-import Cookies from 'js-cookie';
-import { db } from '../firebase-config';
-import { BiTimeFive } from 'react-icons/bi';
-import { GoChevronUp, GoPaperAirplane } from 'react-icons/go';
-import { useStateContext } from '../Context/ContextProvider';
-
+import React, { useEffect, useState } from 'react'
+import {collection,getDoc,query,where,orderBy,onSnapshot,doc,getDocs, addDoc, Timestamp, updateDoc,} from 'firebase/firestore'
+import Cookies from 'js-cookie'
+import { db } from '../firebase-config'
+import { BiTimeFive } from 'react-icons/bi'
+import { GoChevronUp, GoPaperAirplane } from 'react-icons/go'
+import { Link } from 'react-router-dom'
+import { useStateContext } from '../Context/ContextProvider'
 const Chat = () => {
-  const { setNotification, messages, setMessages } = useStateContext();
-  const [myMsg, setMyMsg] = useState('');
-  const [isVisible, setIsVisible] = useState(false);
-  const messagesEndRef = useRef(null);
-
-  // Auto-scroll to the latest message
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Handle scroll visibility for "scroll to top" button
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsVisible(scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Update read status for unread messages
-  useEffect(() => {
-    const updateRead = async () => {
-      const unReadMsg = messages.filter(
-        (data) => data.status === 'unread' && data.sender !== Cookies.get('name')
-      );
-      for (const data of unReadMsg) {
-        await updateDoc(
-          doc(db, 'room', sessionStorage.getItem('roomCode'), 'messages', data.id),
-          { status: 'read' }
-        );
-      }
-    };
-    updateRead();
-  }, [messages]);
-
-  // Subscribe to messages in real time
-  useEffect(() => {
-    const roomCode = sessionStorage.getItem('roomCode');
-    if (roomCode) {
-      const messagesQuery = query(
-        collection(db, 'room', roomCode, 'messages'),
-        orderBy('timestamp', 'asc')
-      );
-      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-        const messageData = snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-        setMessages(messageData);
-        const unReadMsg = messageData.filter(
-          (doc) => doc.status === 'unread' && doc.sender !== Cookies.get('name')
-        );
-        setNotification(unReadMsg.length);
-      });
-      return () => unsubscribe();
+    const {setNotification,messages,setMessages} = useStateContext()
+    const [myMsg,setMyMsg]=useState('')
+    const [isVisible, setIsVisible] = useState(false);
+    useEffect(() => {
+      const handleScroll = () => {
+        const scrollY = window.scrollY;
+        setIsVisible(scrollY > 100);
+      };
+      window.addEventListener('scroll', handleScroll);
+  
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }, []);
+   useEffect(()=>{
+    const updateRead=()=>{
+        const unReadMsg = messages.filter(data=>data.status='unread' && data.name!==Cookies.get('name'))
+        unReadMsg.map(data=> updateDoc(doc(db,'room',sessionStorage.getItem('roomCode'),'messages',data.id),{status:'read'}))
     }
-  }, [setMessages, setNotification]);
-
-  const scrollToTop = () => {
-    document.getElementById('chat-container')?.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const sendMsg = async () => {
-    if (!myMsg.trim()) return;
-    const roomCode = sessionStorage.getItem('roomCode');
-    if (!roomCode) return;
-    try {
-      await addDoc(collection(db, 'room', roomCode, 'messages'), {
-        data: myMsg,
-        sender: Cookies.get('name') || 'Guest',
-        timestamp: Timestamp.now(),
-        status: 'unread',
-      });
-      setMyMsg('');
-    } catch (err) {
-      console.error('Error sending message:', err);
+    updateRead()
+   },[])
+    const scrollToElement = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+    const sendMsg=async()=>{
+        await addDoc(collection(db,'room',sessionStorage.getItem('roomCode'),'messages'),{data:myMsg,sender:Cookies.get('name'),timestamp:Timestamp.now(),status:'unread'}).then(()=>{
+            setMyMsg('')
+        }).catch(err=>console.log(err))
     }
-  };
-
-  return (
-    <div className="bg-black min-h-screen flex flex-col">
-      <div className="text-white ml-5 text-xl flex items-end">
-        <b>Chat</b>
+  return (<div className='bg-black -mt-8'>
+   <div className='text-white ml-5 text-xl flex  items-end' >
+      <b>Chat</b>
       </div>
-      {sessionStorage.getItem('roomCode') ? (
-        <div className="flex flex-col flex-1 m-3 bg-zinc-900 rounded-lg overflow-hidden">
-          <div
-            id="chat-container"
-            className="flex-1 overflow-y-auto p-3"
-            style={{ maxHeight: 'calc(100vh - 200px)' }}
-          >
-            {messages.length === 0 ? (
-              <p className="text-white text-center">No messages yet.</p>
-            ) : (
-              messages.map((data, index) => (
-                <div
-                  key={index}
-                  className={`chat ${
-                    data.sender === Cookies.get('name') ? 'chat-end' : 'chat-start'
-                  } text-white p-2`}
-                >
-                  <div className="bg-black chat-bubble">
-                    <b>{data.sender === Cookies.get('name') ? 'You' : data.sender}</b>
-                    <p>{data.data}</p>
-                    <div className="flex flex-row items-center text-xs">
-                      <BiTimeFive />
-                      {data.timestamp.toDate().toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          <div className="flex flex-row p-3 gap-2 bg-zinc-900">
-            <input
-              type="text"
-              className="flex-1 bg-slate-50 h-10 rounded-full pl-5 outline-none text-black"
-              value={myMsg}
-              onChange={(e) => setMyMsg(e.target.value)}
-              placeholder="Type here..."
-              onKeyPress={(e) => e.key === 'Enter' && sendMsg()}
-            />
-            <button
-              className="bg-slate-50 rounded-full p-2 w-10 flex items-center justify-center"
-              onClick={sendMsg}
-            >
-              <GoPaperAirplane className="mx-auto" color="black" size={18} />
-            </button>
-          </div>
-          {isVisible && (
-            <button
-              className="bg-white bg-opacity-10 w-8 p-2 rounded-full fixed right-7 bottom-20 transition-opacity"
-              onClick={scrollToTop}
-            >
-              <GoChevronUp className="mx-auto" color="white" size={15} />
-            </button>
-          )}
+  <div className="flex gap-0   overflow-hidden overflow-y-scroll w-screen  bg-black ">
+
+    {
+        sessionStorage.getItem('roomCode')?(
+            <div className=' bg-zinc-900 w-screeen m-3  overflow-hidden overflow-y-scroll flex justify-center   rounded-lg text-sm '>
+            <div className='flex flex-col justify-between w-screen gap-0'>
+                  
+                {
+                    messages.map((data,index)=>(
+                        (data.sender===Cookies.get('name'))?((index==messages.length-1)?(
+                            <div className=''>
+
+                        <div key={index} className=' chat chat-end  text-white  p-2 mb-28  '>
+                            <div className=" bg-black chat-bubble ">
+                            <b>{'You'}</b>
+                        <p>{data.data}</p>
+                        <div className='flex flex-row items-center  text-xs'>
+                            <BiTimeFive /> {data.timestamp.toDate().getHours()+':'+data.timestamp.toDate().getMinutes()}
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        ):(
+                            
+                            <div key={index} className=' chat chat-end  text-white p-2 '>
+                            <div className="bg-black chat-bubble ">
+                            <b>{'You'}</b>
+                        <p>{data.data}</p>
+                        <div className='flex flex-row items-center text-xs'>
+                            <BiTimeFive /> {data.timestamp.toDate().getHours()+':'+data.timestamp.toDate().getMinutes()}
+                                </div>
+                            </div>
+                            </div>
+                          
+                        )
+                            
+                        ):((index===messages.length-1)?(
+                            <div className="">
+                            <div key={index} className=' chat chat-start start-0 text-white p-2 mb-28 '>
+                            <div className="bg-black chat-bubble ">
+                            <b>{data.sender}</b>
+                        <p>{data.data}</p>
+                        <div className='flex flex-row items-center text-xs'>
+                            <BiTimeFive /> {data.timestamp.toDate().getHours()+':'+data.timestamp.toDate().getMinutes()}
+                                </div>
+                            </div>
+                            </div>
+                            </div>
+                        ):(
+                            <div key={index} className=' chat chat-start  text-white p-2 '>
+                            <div className="bg-black chat-bubble">
+                            <b>{data.sender}</b>
+                        <p>{data.data}</p>
+                        <div className='flex flex-row items-center text-xs'>
+                            <BiTimeFive /> {data.timestamp.toDate().getHours()+':'+data.timestamp.toDate().getMinutes()}
+                                </div>
+                            </div>
+                            </div>
+                        )
+                            
+                        )
+                       
+                    ))
+                }
+                <button className={` bg-white bg-opacity-10 w-8 p-2  rounded-full backdrop-filter backdrop-blur fixed right-7 bottom-20 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-0'}` } onClick={()=>scrollToElement('top')} >
+                <GoChevronUp className='mx-auto' color='white' size={15} />
+                </button> 
+            </div>
+            <div className=' pt-5 flex flex-row fixed bottom-8 gap-2'>
+            <input 
+        type='text'
+        className='bg-slate-50 h-10 w-56   rounded-full pl-5  outline-none '
+        value={myMsg}
+        onChange={(e)=>{
+    setMyMsg(e.target.value)
+        }} 
+        placeholder='Type here...'
+        />
+        <button className='bg-slate-50 rounded-full  p-2 w-10  text-center ' onClick={()=>sendMsg()}>
+            {/* <Icon path={mdiSend} size={1} /> */}
+            <GoPaperAirplane className='mx-auto' color='black' size={18} />
+        </button>
+            </div>
         </div>
-      ) : (
-        <div className="mt-14 mx-auto text-white">
-          <p>
-            <b>Please join a room to chat</b>
-          </p>
-        </div>
-      )}
+        ):(
+            <div className='mt-14 mx-auto text-white'>
+                <p><b>Please join the room to chat </b></p>
+            </div>
+        )
+    }
     </div>
-  );
-};
+  </div>
+    
+  )
+}
 
-export default Chat;
-
+export default Chat
