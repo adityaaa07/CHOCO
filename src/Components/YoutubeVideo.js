@@ -31,8 +31,43 @@ const YouTubeVideo = ({ videoIds }) => {
       }).catch(console.log);
     }
   };
-
   useEffect(() => {
+    const unsub = onSnapshot(docRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setVideoIds(data.currentSong);
+
+        if (data.currentPlaying) {
+          setCurrentPlaying(data.currentPlaying);
+          setId(data.currentPlaying.id);
+          setTitle(data.currentPlaying.title);
+          setArtist(data.currentPlaying.channelName);
+          setPlayedBy(data.currentPlaying.playedBy);
+        }
+
+        // 🔄 Sync player playback state
+        const { isPlaying, currentTime, lastUpdated } = data;
+        const player = playerRef.current;
+        if (player && playerReady) {
+          const now = Date.now();
+          const expectedTime = currentTime + (isPlaying ? (now - lastUpdated) / 1000 : 0);
+          const playerTime = await player.getCurrentTime();
+
+          if (Math.abs(playerTime - expectedTime) > 1.5) {
+            player.seekTo(expectedTime, true);
+          }
+
+          const playerState = player.getPlayerState();
+          if (isPlaying && playerState !== window.YT.PlayerState.PLAYING) {
+            player.playVideo();
+          } else if (!isPlaying && playerState === window.YT.PlayerState.PLAYING) {
+            player.pauseVideo();
+          }
+        }
+      }
+    });
+
+  /*useEffect(() => {
     const roomCode = sessionStorage.getItem('roomCode');
     const docRef = doc(db, 'room', roomCode);
 
@@ -49,7 +84,7 @@ const YouTubeVideo = ({ videoIds }) => {
         }
       }
     });
-
+*/
     return () => unsub();
   }, []);
 
