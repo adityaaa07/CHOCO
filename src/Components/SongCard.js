@@ -526,7 +526,7 @@ const SongCard = ({
         addToQueue(image, title, id, channelName, platform, videoIds, name, uri);
         setToastMsg('Added to Repeat');
       } else if (type === 'shuffle') {
-        shuffle(image, title, id, channelName, videoIds, name, platform, uri);
+        shuffule(image, title, id, channelName, videoIds, name, platform, uri);
         setToastMsg('Added to Shuffle');
       }
       setToastDisplay(true);
