@@ -14,6 +14,9 @@ const NowPlaying = () => {
   return (
     <div className="mb-4">
       {currentTrack.type === 'youtube' && (
+      //  <YouTubeVideo
+       //           videoIds={currentSong[0]?.currentSong || []}
+       //         />
         <YouTubeVideo videoIds={[{ videoId: currentTrack.videoId }]} />
       )}
 
