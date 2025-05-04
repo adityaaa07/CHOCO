@@ -26,6 +26,7 @@ export const ContextProvider = ({ children }) => {
   const [playedBy, setPlayedBy] = useState('');
   const [token, setToken] = useState(sessionStorage.getItem('spotify_token') || null);
   const seekBarRef = useRef(null);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
   useEffect(() => {
     const getData = () => {
@@ -87,6 +88,7 @@ export const ContextProvider = ({ children }) => {
       seekBarRef,
       playedBy, setPlayedBy,
       token, setToken,
+      currentTrack, setCurrentTrack,
     }}>
       {children}
     </StateContext.Provider>
