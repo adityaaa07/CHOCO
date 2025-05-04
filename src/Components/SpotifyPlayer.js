@@ -565,7 +565,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 
 export default SpotifyPlayer;  */
 // src/components/SpotifyPlayer.js
-/*
+
 import React, { useEffect, useState, useRef } from 'react';
 
 let spotifyPlayerInstance = null;
@@ -708,7 +708,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 };
 
 export default SpotifyPlayer;
-*/
+
 /*
 import React, { useEffect, useState, useRef } from 'react';
 
@@ -1261,125 +1261,6 @@ const SpotifyPlayer = ({ token, uri }) => {
 
 export default SpotifyPlayer;
 */
-
-import React, { useEffect, useRef, useState } from 'react';
-import { getSpotifyPlayer } from '../utils/spotifyPlayerInstance';
-import { useStateContext } from '../Context/ContextProvider';
-
-const SpotifyPlayer = ({ token, uri }) => {
-  const { setCurrentTime, setDuration } = useStateContext();
-  const [track, setTrack] = useState(null);
-  const [paused, setPaused] = useState(true);
-  const [position, setPosition] = useState(0);
-  const [deviceId, setDeviceId] = useState(null);
-
-  const playerRef = useRef(null);
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    if (!token || playerRef.current) return;
-
-    const init = async () => {
-      await waitForSpotifySDK();
-
-      const player = getSpotifyPlayer(token);
-      playerRef.current = player;
-
-      player.addListener('ready', ({ device_id }) => {
-        setDeviceId(device_id);
-        transferPlayback(token, device_id, uri);
-      });
-
-      player.addListener('player_state_changed', (state) => {
-        if (!state) return;
-        setPaused(state.paused);
-        setTrack(state.track_window.current_track);
-        setPosition(state.position);
-        setDuration(state.duration);
-        setCurrentTime(state.position);
-      });
-
-      player.connect();
-    };
-
-    init();
-  }, [token]);
-
-  // helper
-  const waitForSpotifySDK = () => {
-    return new Promise(resolve => {
-      if (window.Spotify) return resolve();
-      window.onSpotifyWebPlaybackSDKReady = () => resolve();
-    });
-  };
-
-  const transferPlayback = async (token, device_id, uri) => {
-    try {
-      await fetch('https://api.spotify.com/v1/me/player', {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ device_ids: [device_id], play: true })
-      });
-
-      if (uri) {
-        await fetch('https://api.spotify.com/v1/me/player/play', {
-          method: 'PUT',
-          headers: { Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ uris: [uri] })
-        });
-      }
-    } catch (err) {
-      console.error('Playback error:', err);
-    }
-  };
-  return (
-<div style={{ maxWidth: 600, margin: '2rem auto', padding: '2rem', border: '1px solid #ccc', borderRadius: 16, backgroundColor: '#f9f9f9' }}>
-{track ? (
-<>
-<div style={{ display: 'flex', alignItems: 'center' }}>
-<img
-src={track.album.images[0].url}
-alt="Album Art"
-width="128"
-height="128"
-style={{ borderRadius: 8 }}
-/>
-<div style={{ marginLeft: '1.5rem' }}>
-<strong style={{ fontSize: '1.5rem' }}>{track.name}</strong>
-<br />
-<span style={{ fontSize: '1.2rem' }}>{track.artists.map(a => a.name).join(', ')}</span>
-</div>
-</div>
-      <input
-        type="range"
-        min="0"
-        max={duration}
-        value={position}
-        onChange={(e) => {
-          const newPos = Number(e.target.value);
-          playerRef.current?.seek(newPos);
-          setPosition(newPos);
-          setCurrentTime(newPos);
-        }}
-        style={{ width: '100%', marginTop: '1.5rem', height: '8px' }}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '1.5rem' }}>
-        <button onClick={() => playerRef.current?.previousTrack()}>⏮️</button>
-        <button onClick={() => playerRef.current?.togglePlay()}>
-          {paused ? '▶️ Play' : '⏸️ Pause'}
-        </button>
-        <button onClick={() => playerRef.current?.nextTrack()}>⏭️</button>
-      </div>
-    </>
-  ) : (
-    <p>Loading Spotify Player...</p>
-  )}
-</div>
-);
-};
-
-export default SpotifyPlayer;
 
 
   
