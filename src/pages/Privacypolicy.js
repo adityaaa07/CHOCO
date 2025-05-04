@@ -23,7 +23,7 @@ const Privacypolicy = () => {
   <h6 class="text-sm">Updates to Privacy Policy:</h6>
   <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on our website or application.</p>
   <h6 class="text-sm">Contact Us:</h6>
-  <p>If you have any questions or concerns about our Privacy Policy, please contact us at rajadeepak1989@gmail.com.</p>
+  <p>If you have any questions or concerns about our Privacy Policy, please contact us at 21103084@mail.jiit.ac.in.</p>
        </div>
     </div>
     </div>
