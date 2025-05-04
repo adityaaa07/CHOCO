@@ -738,7 +738,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     const refresh_token = sessionStorage.getItem('spotify_refresh_token');
     if (!refresh_token) {
       setError('No refresh token available. Please log in again.');
-      console.error('No Spotify refresh token');
+      console.error('SpotifyPlayer: No Spotify refresh token');
       return null;
     }
     try {
@@ -750,24 +750,30 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       sessionStorage.setItem('spotify_token_expiry', Date.now() + expires_in * 1000);
       localStorage.setItem('spotify_access_token', access_token);
       setToken(access_token);
-      console.log('Spotify token refreshed');
+      console.log('SpotifyPlayer: Spotify token refreshed');
       return access_token;
     } catch (err) {
-      console.error('Token refresh error:', err.message);
+      console.error('SpotifyPlayer: Token refresh error:', err.message);
       setError('Failed to refresh Spotify token.');
       return null;
     }
   }, [setToken]);
 
-  const fetchTrackDetails = async (trackId, activeToken) => {
+  const fetchTrackDetails = async (trackId, activeToken, retries = 3, delay = 1000) => {
     try {
       const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
         headers: { Authorization: `Bearer ${activeToken}` },
       });
       setDuration(Math.floor(response.data.duration_ms / 1000));
-      console.log('Track details fetched:', response.data.name);
+      console.log('SpotifyPlayer: Track details fetched:', response.data.name);
     } catch (err) {
-      console.error('Error fetching track details:', err.message);
+      if (err.response?.status === 429 && retries > 0) {
+        const retryAfter = err.response.headers['retry-after'] ? parseInt(err.response.headers['retry-after']) * 1000 : delay;
+        console.warn(`SpotifyPlayer: Rate limit hit, retrying after ${retryAfter}ms, retries left: ${retries}`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter));
+        return fetchTrackDetails(trackId, activeToken, retries - 1, delay * 2);
+      }
+      console.error('SpotifyPlayer: Error fetching track details:', err.message);
       setError('Failed to fetch track details.');
     }
   };
@@ -785,9 +791,9 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
         currentTime: 0,
         lastUpdated: Date.now(),
       });
-      console.log('Playing via API:', trackUri);
+      console.log('SpotifyPlayer: Playing via API:', trackUri);
     } catch (err) {
-      console.error('API playback error:', err.message);
+      console.error('SpotifyPlayer: API playback error:', err.message);
       setError('Failed to play via API: ' + (err.response?.data?.error?.message || err.message));
     }
   };
@@ -804,14 +810,16 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
     const isExpired = expiry && Date.now() >= parseInt(expiry);
 
     // Validate token and URI
+    console.log('SpotifyPlayer: Token status:', sessionToken);
+    console.log('SpotifyPlayer: URI status:', uri);
     if (!sessionToken) {
       setError('No Spotify token available. Please log in.');
-      console.error('No Spotify token');
+      console.error('SpotifyPlayer: No Spotify token');
       return;
     }
     if (!uri || typeof uri !== 'string' || !uri.startsWith('spotify:track:')) {
-      setError('Invalid or missing track URI.');
-      console.error('Invalid track URI:', uri);
+      setError('Invalid or missing track URI. Please select a valid song.');
+      console.error('SpotifyPlayer: Invalid track URI:', uri);
       return;
     }
 
@@ -826,23 +834,23 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       fetchTrackDetails(trackId, sessionToken);
     } else {
       setError('Invalid track URI format.');
-      console.error('Invalid track URI format:', uri);
+      console.error('SpotifyPlayer: Invalid track URI format:', uri);
       return;
     }
 
     // Prevent duplicate SDK script loads
     if (document.getElementById('spotify-sdk-script')) {
-      console.warn('Spotify SDK script already loaded');
+      console.warn('SpotifyPlayer: Spotify SDK script already loaded');
       return;
     }
 
     // Define onSpotifyWebPlaybackSDKReady before loading script
     window.onSpotifyWebPlaybackSDKReady = () => {
-      console.log('Spotify SDK Ready');
+      console.log('SpotifyPlayer: Spotify SDK Ready');
       const spotifyPlayer = new window.Spotify.Player({
         name: 'Choco Web Player',
         getOAuthToken: (cb) => {
-          console.log('Providing token to SDK:', sessionToken);
+          console.log('SpotifyPlayer: Providing token to SDK:', sessionToken);
           cb(sessionToken);
         },
         volume: 0.5,
@@ -851,14 +859,14 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       spotifyPlayer.addListener('ready', ({ device_id }) => {
         setPlayer(spotifyPlayer);
         setDeviceId(device_id);
-        console.log('Player ready, device_id:', device_id);
+        console.log('SpotifyPlayer: Player ready, device_id:', device_id);
       });
 
       spotifyPlayer.addListener('not_ready', ({ device_id }) => {
         setError('Spotify player is offline. Trying API playback...');
         setDeviceId(null);
         playViaApi(uri, sessionToken);
-        console.warn('Spotify player not ready:', device_id);
+        console.warn('SpotifyPlayer: Player not ready:', device_id);
       });
 
       spotifyPlayer.addListener('player_state_changed', (state) => {
@@ -871,38 +879,38 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
             currentTime: Math.floor(state.position / 1000),
             lastUpdated: Date.now(),
           }).then(() => {
-            console.log('Playback state updated in Firebase');
+            console.log('SpotifyPlayer: Playback state updated in Firebase');
           }).catch((err) => {
-            console.error('Error updating playback state:', err.message);
+            console.error('SpotifyPlayer: Error updating playback state:', err.message);
           });
         }
       });
 
       spotifyPlayer.addListener('initialization_error', ({ message }) => {
         setError('Failed to initialize Spotify player: ' + message);
-        console.error('Spotify initialization error:', message);
+        console.error('SpotifyPlayer: Spotify initialization error:', message);
       });
 
       spotifyPlayer.addListener('authentication_error', ({ message }) => {
         setError('Spotify authentication failed: ' + message);
-        console.error('Spotify authentication error:', message);
+        console.error('SpotifyPlayer: Spotify authentication error:', message);
         refreshToken();
       });
 
       spotifyPlayer.addListener('account_error', ({ message }) => {
         setError('Spotify account issue: ' + message);
-        console.error('Spotify account error:', message);
+        console.error('SpotifyPlayer: Spotify account error:', message);
       });
 
       spotifyPlayer.addListener('playback_error', ({ message }) => {
         setError('Playback error: ' + message);
-        console.error('Spotify playback error:', message);
+        console.error('SpotifyPlayer: Spotify playback error:', message);
         playViaApi(uri, sessionToken);
       });
 
-      console.log('Connecting Spotify player');
+      console.log('SpotifyPlayer: Connecting Spotify player');
       spotifyPlayer.connect().then((success) => {
-        console.log('Connect status:', success);
+        console.log('SpotifyPlayer: Connect status:', success);
       });
     };
 
@@ -917,7 +925,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       if (player) {
         player.disconnect();
         setPlayer(null);
-        console.log('Spotify player disconnected');
+        console.log('SpotifyPlayer: Spotify player disconnected');
       }
       const existingScript = document.getElementById('spotify-sdk-script');
       if (existingScript) {
@@ -933,14 +941,14 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
 
   useEffect(() => {
     if (player && deviceId && uri && !error) {
-      console.log('Attempting playback:', uri);
+      console.log('SpotifyPlayer: Attempting playback:', uri);
       player.resume().catch((err) => {
         setError('Failed to start playback. Retrying...');
-        console.error('Spotify playback error:', err.message);
+        console.error('SpotifyPlayer: Spotify playback error:', err.message);
         setTimeout(() => {
           player.resume().catch((retryErr) => {
             setError('Failed to start playback after retry.');
-            console.error('Spotify retry error:', retryErr.message);
+            console.error('SpotifyPlayer: Spotify retry error:', retryErr.message);
             playViaApi(uri, token || sessionStorage.getItem('spotify_token'));
           });
         }, 2000);
@@ -953,11 +961,11 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       if (isPlaying) {
         player.pause();
         await updateDoc(roomRef, { isPlaying: false, currentTime, lastUpdated: Date.now() });
-        console.log('Paused playback');
+        console.log('SpotifyPlayer: Paused playback');
       } else {
         player.resume();
         await updateDoc(roomRef, { isPlaying: true, currentTime, lastUpdated: Date.now() });
-        console.log('Resumed playback');
+        console.log('SpotifyPlayer: Resumed playback');
       }
       setIsPlaying(!isPlaying);
     } else {
@@ -979,7 +987,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       if (player && prevTrack.platform === 'spotify') {
         player.resume({ uris: [prevTrack.uri] });
       }
-      console.log('Switched to previous track:', prevTrack.title);
+      console.log('SpotifyPlayer: Switched to previous track:', prevTrack.title);
     }
   };
 
@@ -997,7 +1005,7 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
       if (player && nextTrack.platform === 'spotify') {
         player.resume({ uris: [nextTrack.uri] });
       }
-      console.log('Switched to next track:', nextTrack.title);
+      console.log('SpotifyPlayer: Switched to next track:', nextTrack.title);
     }
   };
 
@@ -1037,9 +1045,9 @@ const SpotifyPlayer = ({ uri, image, title, channelName }) => {
             if (player) {
               player.seek(newTime * 1000);
               updateDoc(roomRef, { currentTime: newTime, lastUpdated: Date.now() }).then(() => {
-                console.log('Seek updated in Firebase');
+                console.log('SpotifyPlayer: Seek updated in Firebase');
               }).catch((err) => {
-                console.error('Error updating seek:', err.message);
+                console.error('SpotifyPlayer: Error updating seek:', err.message);
               });
             }
           }}
