@@ -589,25 +589,7 @@ const SpotifyPlayer = ({ token, uri }) => {
   const docRef = doc(db, 'room', roomCode);
 
   useEffect(() => {
-  if (!player || !uri) return;
-
-  const playNewUri = async () => {
-    try {
-      await fetch('https://api.spotify.com/v1/me/player/play', {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ uris: [uri] }),
-      });
-    } catch (err) {
-      console.error('Failed to play new track:', err);
-    }
-  };
-
-  playNewUri();
-}, [uri, player]);
+    if (!token || !uri) return;
 
     const loadSpotifyPlayer = () => {
       if (!window.Spotify || spotifyPlayerInstance) return;
@@ -669,6 +651,28 @@ const SpotifyPlayer = ({ token, uri }) => {
       clearInterval(intervalRef.current);
     };
   }, [token, uri]);
+
+  // 🔄 Force play when URI changes
+  useEffect(() => {
+    if (!player || !uri) return;
+
+    const playNewUri = async () => {
+      try {
+        await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uris: [uri] }),
+        });
+      } catch (err) {
+        console.error('Failed to play new track:', err);
+      }
+    };
+
+    playNewUri();
+  }, [uri, player]);
 
   useEffect(() => {
     if (player && !paused) {
@@ -765,6 +769,7 @@ const SpotifyPlayer = ({ token, uri }) => {
 };
 
 export default SpotifyPlayer;
+
 /*---------------------------chatak
 import React, { useEffect, useState, useRef } from 'react';
 
