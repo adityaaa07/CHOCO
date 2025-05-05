@@ -57,38 +57,3 @@ const addToQueue = async (image, title, id, channelName, platform, songs, name, 
 };
 
 export default addToQueue;
-/*
-import { db } from "../firebase-config";
-import { updateDoc, doc } from "firebase/firestore";
-
-const addToQueue = async (image, title, id, channelName, platform, songs, name, uri = null) => {
-  const track = {
-    image,
-    title,
-    id,
-    channelName,
-    platform, // 'spotify' or 'youtube'
-    playedBy: name,
-  };
-
-  if (platform === 'spotify' && uri) {
-    track.uri = uri;
-  }
-  if(!Array.isArray(songs)){
-      songs=[];
-  }
-  const roomRef = doc(db, 'room', sessionStorage.getItem('roomCode'));
-
-  if (songs) {
-    songs.push(track);
-    await updateDoc(roomRef, { currentSong: [...songs] }).catch((err) => console.log(err));
-  } else {
-    await updateDoc(roomRef, {
-      currentSong: [track],
-      currentPlaying: track,
-    }).catch((err) => console.log(err));
-  }
-};
-
-export default addToQueue;
-*/
