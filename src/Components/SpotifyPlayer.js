@@ -589,7 +589,25 @@ const SpotifyPlayer = ({ token, uri }) => {
   const docRef = doc(db, 'room', roomCode);
 
   useEffect(() => {
-    if (!token || !uri) return;
+  if (!player || !uri) return;
+
+  const playNewUri = async () => {
+    try {
+      await fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uris: [uri] }),
+      });
+    } catch (err) {
+      console.error('Failed to play new track:', err);
+    }
+  };
+
+  playNewUri();
+}, [uri, player]);
 
     const loadSpotifyPlayer = () => {
       if (!window.Spotify || spotifyPlayerInstance) return;
