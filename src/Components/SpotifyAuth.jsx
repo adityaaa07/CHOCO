@@ -27,6 +27,11 @@ const SpotifyAuth = () => {
         onClick={loginSpotify}
         className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
       >
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg"
+          alt="Spotify Logo"
+          className="w-6 h-6 mr-2"
+        />
         Login with Spotify
       </button>
     </div>
