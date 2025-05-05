@@ -32,7 +32,7 @@ const SpotifyAuth = () => {
           alt="Spotify Logo"
           className="w-6 h-6 mr-2"
         />
-        Login with Spotify
+        <span>Login with Spotify</span>
       </button>
     </div>
   );
