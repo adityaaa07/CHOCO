@@ -25,9 +25,9 @@ const SpotifyAuth = () => {
     <div className="flex flex-col items-center justify-center">
       <button
         onClick={loginSpotify}
-        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        className="bg-white-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
       >
-        Connect Spotify
+        Login with Spotify
       </button>
     </div>
   );
